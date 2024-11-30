@@ -1,3 +1,4 @@
-yt-dlp config for channel archival
-How to use:
-run yt-dlp in the same directory as the config
+# yt-dlp Config for Channel Archival
+
+## How to Use
+1. Run `yt-dlp` in the terminal from the same directory as the config.
