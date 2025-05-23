@@ -42,6 +42,7 @@ def get_master_format_rankings():
     itag_rank_map['616'] = 0
     return itag_rank_map
 
+# todo: retry if yt-dlp outputs a warning
 def get_best_live_itag(youtube_id):
     url = f"https://www.youtube.com/watch?v={youtube_id}"
     ydl_opts = {'quiet': True}
@@ -67,6 +68,7 @@ def move_files_by_video_id(src_folder, dest_folder, video_id):
             moved.append(filename)
     return moved
 
+# todo: retry if yt-dlp outputs a warning
 def perform_redownload(args, yt_id, folder, backup_root, redownload_dir, dry_run):
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     backup_dir = os.path.join(backup_root, f"{yt_id}_{timestamp}")
