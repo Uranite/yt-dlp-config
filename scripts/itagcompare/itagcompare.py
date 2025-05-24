@@ -10,6 +10,7 @@ from yt_dlp.extractor.youtube import _video
 
 def extract_info_from_filename(filename):
     id_match = re.search(r'\[([a-zA-Z0-9_-]{11})\]', filename)
+    # todo: read info.json for itag instead
     itag_match = re.search(r'\[(\d+)\+\d+\]', filename)
     if id_match and itag_match:
         return id_match.group(1), itag_match.group(1)
@@ -43,6 +44,7 @@ def get_master_format_rankings():
     return itag_rank_map
 
 # todo: retry if yt-dlp outputs a warning
+# todo: read info.json for itag and vbr and compare with live itag and vbr for same itag comparison
 def get_best_live_itag(youtube_id):
     url = f"https://www.youtube.com/watch?v={youtube_id}"
     ydl_opts = {'quiet': True}
