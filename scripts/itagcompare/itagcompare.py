@@ -18,6 +18,7 @@ class Logger:
 
     def warning(self, msg):
         self.warnings.append(msg)
+        # print(f"[Warning]: {msg}")
 
     def error(self, msg):
         print(f"[Error]: {msg}")
