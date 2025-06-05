@@ -1,5 +1,5 @@
-import sys
 import os
+import argparse
 
 def sort_youtube_ids(input_file):
     with open(input_file, 'r') as f:
@@ -24,11 +24,11 @@ def sort_youtube_ids(input_file):
     print(f"Sorted YouTube video IDs have been written back to {input_file}")
 
 def main():
-    if len(sys.argv) < 2:
-        print("Usage: python sort.py input_file.txt")
-        sys.exit(1)
-
-    sort_youtube_ids(sys.argv[1])
+    parser = argparse.ArgumentParser(description='Sort YouTube video IDs in a file.')
+    parser.add_argument('input_file', help='Path to the input file containing YouTube video IDs')
+    
+    args = parser.parse_args()
+    sort_youtube_ids(args.input_file)
 
 if __name__ == "__main__":
     main()
