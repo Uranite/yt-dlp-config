@@ -192,13 +192,15 @@ def main():
     
     behavior_group = parser.add_mutually_exclusive_group()
     behavior_group.add_argument('--behavior', 
-                              choices=['better_format', 'better_format_vbr', 'redownload_if_mismatch', 'redownload_if_match'],
+                              choices=['better_format', 'better_format_vbr', 'better_format_vbr_diff', 'redownload_if_mismatch', 'redownload_if_mismatch_vbr_diff', 'redownload_if_match'],
                               default='better_format',
                               help='''
                               Redownload behavior:
                               - better_format: redownload if live format is better (default)
                               - better_format_vbr: like better_format but also checks VBR if formats match
+                              - better_format_vbr_diff: like better_format but redownloads if VBR is different, regardless of which is better
                               - redownload_if_mismatch: redownload if format doesn't match live formats
+                              - redownload_if_mismatch_vbr_diff: like redownload_if_mismatch but also checks VBR if formats match
                               - redownload_if_match: redownload if local format matches best available format
                               ''')
     
@@ -286,6 +288,45 @@ def main():
                     status = "FORMAT_MATCH"
                     redownload = False
                         
+            elif args.behavior == 'better_format_vbr_diff':
+                if file_itag == best_itag:
+                    if best_vbr is not None and file_vbr is not None:
+                        if best_vbr != file_vbr:
+                            status = f"DIFFERENT_VBR (Current: {file_vbr}kbps, Live: {best_vbr}kbps)"
+                            redownload = True
+                        else:
+                            status = "SAME_VBR"
+                            redownload = False
+                    else:
+                        status = "MATCH (VBR not available)"
+                        redownload = False
+                elif file_rank is None or best_rank is None:
+                    status = "UNKNOWN"
+                    redownload = False
+                else:
+                    if best_rank < file_rank:  # Lower rank is better
+                        status = f"BETTER_FORMAT ({file_itag} -> {best_itag})"
+                        redownload = True
+                    else:
+                        status = "WORSE"
+                        redownload = False
+                        
+            elif args.behavior == 'redownload_if_mismatch_vbr_diff':
+                if file_itag != best_itag:
+                    status = f"FORMAT_MISMATCH (Current: {file_itag}, Best: {best_itag})"
+                    redownload = True
+                else:
+                    if best_vbr is not None and file_vbr is not None:
+                        if best_vbr != file_vbr:
+                            status = f"FORMAT_MATCH_VBR_MISMATCH (Current: {file_vbr}kbps, Live: {best_vbr}kbps)"
+                            redownload = True
+                        else:
+                            status = "FORMAT_MATCH_VBR_MATCH"
+                            redownload = False
+                    else:
+                        status = "FORMAT_MATCH (VBR not available)"
+                        redownload = False
+                        
             elif args.behavior == 'redownload_if_match':
                 if file_itag == best_itag:
                     status = "FORMAT_MATCH"
@@ -300,6 +341,8 @@ def main():
                 "FORMAT_MISMATCH",
                 "CHECK_FAILED",
                 "UNKNOWN",
+                "DIFFERENT_VBR",
+                "FORMAT_MATCH_VBR_MISMATCH",
             }
 
             if args.verbose or any(status.startswith(s) for s in VISIBLE_STATUSES):
