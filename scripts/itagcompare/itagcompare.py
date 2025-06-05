@@ -190,12 +190,12 @@ def main():
     parser.add_argument('--use-title-matching', action='store_true', 
                       help='Match files by title when video ID is not found in filename')
     
-    behavior_group = parser.add_mutually_exclusive_group()
-    behavior_group.add_argument('--behavior', 
+    strategy_group = parser.add_mutually_exclusive_group()
+    strategy_group.add_argument('--strategy', 
                               choices=['better_format', 'better_format_vbr', 'better_format_vbr_diff', 'redownload_if_mismatch', 'redownload_if_mismatch_vbr_diff', 'redownload_if_match'],
                               default='better_format',
                               help='''
-                              Redownload behavior:
+                              Redownload strategy:
                               - better_format: redownload if live format is better (default)
                               - better_format_vbr: like better_format but also checks VBR if formats match
                               - better_format_vbr_diff: like better_format but redownloads if VBR is different, regardless of which is better
@@ -242,7 +242,7 @@ def main():
             file_rank = itag_rankings.get(file_itag)
             best_rank = itag_rankings.get(best_itag)
             
-            if args.behavior == 'better_format':
+            if args.strategy == 'better_format':
                 if file_itag == best_itag:
                     status = "MATCH"
                     redownload = False
@@ -257,7 +257,7 @@ def main():
                         status = "WORSE"
                         redownload = False
                         
-            elif args.behavior == 'better_format_vbr':
+            elif args.strategy == 'better_format_vbr':
                 if file_itag == best_itag:
                     if best_vbr is not None and file_vbr is not None:
                         if best_vbr > file_vbr:
@@ -280,7 +280,7 @@ def main():
                         status = "WORSE"
                         redownload = False
                         
-            elif args.behavior == 'redownload_if_mismatch':
+            elif args.strategy == 'redownload_if_mismatch':
                 if file_itag != best_itag:
                     status = f"FORMAT_MISMATCH (Current: {file_itag}, Best: {best_itag})"
                     redownload = True
@@ -288,7 +288,7 @@ def main():
                     status = "FORMAT_MATCH"
                     redownload = False
                         
-            elif args.behavior == 'better_format_vbr_diff':
+            elif args.strategy == 'better_format_vbr_diff':
                 if file_itag == best_itag:
                     if best_vbr is not None and file_vbr is not None:
                         if best_vbr != file_vbr:
@@ -311,7 +311,7 @@ def main():
                         status = "WORSE"
                         redownload = False
                         
-            elif args.behavior == 'redownload_if_mismatch_vbr_diff':
+            elif args.strategy == 'redownload_if_mismatch_vbr_diff':
                 if file_itag != best_itag:
                     status = f"FORMAT_MISMATCH (Current: {file_itag}, Best: {best_itag})"
                     redownload = True
@@ -327,7 +327,7 @@ def main():
                         status = "FORMAT_MATCH (VBR not available)"
                         redownload = False
                         
-            elif args.behavior == 'redownload_if_match':
+            elif args.strategy == 'redownload_if_match':
                 if file_itag == best_itag:
                     status = "FORMAT_MATCH"
                     redownload = True
