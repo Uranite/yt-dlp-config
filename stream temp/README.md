@@ -1,1 +1,1 @@
-for that stream you know is definitely going to be made private/deleted immediately after its done
+Temporary folder to download livestreams that you know are going to be deleted/privated afterwards
