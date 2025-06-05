@@ -81,7 +81,7 @@ Double-click the file or run from command prompt.
 
 ## Dependencies
 
-- Python 3.9+
+- Python 3.9+ or later
 - yt-dlp
 
 ## License
