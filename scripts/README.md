@@ -83,3 +83,7 @@ Double-click the file or run from command prompt.
 
 - Python 3.9+
 - yt-dlp
+
+## License
+
+This project is licensed under the terms of the MIT license.
