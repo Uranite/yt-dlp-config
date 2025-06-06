@@ -200,7 +200,7 @@ def main():
                               - better_format_vbr: like better_format but also checks VBR if formats match
                               - better_format_vbr_diff: like better_format but redownloads if VBR is different, regardless of which is better
                               - redownload_if_mismatch: redownload if format doesn't match live formats
-                              - redownload_if_mismatch_vbr_diff: like redownload_if_mismatch but also checks VBR if formats match
+                              - redownload_if_mismatch_vbr_diff: like redownload_if_mismatch but redownloads if VBR is different, regardless of which is better
                               - redownload_if_match: redownload if local format matches best available format
                               ''')
     
