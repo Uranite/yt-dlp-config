@@ -198,16 +198,15 @@ def main():
     
     strategy_group = parser.add_mutually_exclusive_group()
     strategy_group.add_argument('--strategy', 
-                              choices=['better_format', 'better_format_vbr', 'better_format_vbr_diff', 'redownload_if_mismatch', 'redownload_if_mismatch_vbr_diff', 'redownload_if_match'],
+                              choices=['better_format', 'better_format_vbr', 'better_format_vbr_diff', 'mismatch', 'mismatch_vbr_diff'],
                               default='better_format',
                               help='''
                               Redownload strategy:
                               - better_format: redownload if live format is better (default)
                               - better_format_vbr: like better_format but also checks VBR if formats match
                               - better_format_vbr_diff: like better_format but redownloads if VBR is different, regardless of which is better
-                              - redownload_if_mismatch: redownload if format doesn't match live formats
-                              - redownload_if_mismatch_vbr_diff: like redownload_if_mismatch but redownloads if VBR is different, regardless of which is better
-                              - redownload_if_match: redownload if local format matches best available format
+                              - mismatch: redownload if format doesn't match live formats
+                              - mismatch_vbr_diff: like mismatch, but if the format matches, redownloads if VBR is different, regardless of which is better
                               ''')
     
     parser.add_argument('--filter-format', nargs='+', 
@@ -294,7 +293,7 @@ def main():
                         status = "WORSE"
                         redownload = False
                         
-            elif args.strategy == 'redownload_if_mismatch':
+            elif args.strategy == 'mismatch':
                 if file_itag != best_itag:
                     vbr_info = f" (VBR: {file_vbr}kbps vs {best_vbr}kbps)"
                     status = f"FORMAT_MISMATCH (Current: {file_itag}, Best: {best_itag}{vbr_info})"
@@ -326,7 +325,7 @@ def main():
                         status = "WORSE"
                         redownload = False
                         
-            elif args.strategy == 'redownload_if_mismatch_vbr_diff':
+            elif args.strategy == 'mismatch_vbr_diff':
                 if file_itag != best_itag:
                     vbr_info = f" (VBR: {file_vbr}kbps vs {best_vbr}kbps)"
                     status = f"FORMAT_MISMATCH (Current: {file_itag}, Best: {best_itag}{vbr_info})"
@@ -343,15 +342,6 @@ def main():
                         status = "FORMAT_MATCH (VBR not available)"
                         redownload = False
                         
-            elif args.strategy == 'redownload_if_match':
-                if file_itag == best_itag:
-                    status = "FORMAT_MATCH"
-                    redownload = True
-                else:
-                    vbr_info = f" (VBR: {file_vbr}kbps vs {best_vbr}kbps)"
-                    status = f"FORMAT_MISMATCH (Current: {file_itag}, Best: {best_itag}{vbr_info})"
-                    redownload = False
-
             # ANSI color codes
             GREEN = '\033[92m'
             BLUE = '\033[94m'
