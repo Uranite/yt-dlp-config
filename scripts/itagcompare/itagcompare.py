@@ -136,8 +136,6 @@ def find_downloaded_files(folder, video_id, base_name, use_base_name_fallback=Fa
 
 def parse_yt_dlp_conf(config_path):
     args_list = []
-    if not config_path or not os.path.isfile(config_path):
-        return args_list
     with open(config_path, encoding='utf-8') as f:
         for line in f:
             line = line.strip()
