@@ -296,7 +296,8 @@ def main():
                         
             elif args.strategy == 'redownload_if_mismatch':
                 if file_itag != best_itag:
-                    status = f"FORMAT_MISMATCH (Current: {file_itag}, Best: {best_itag})"
+                    vbr_info = f" (VBR: {file_vbr}kbps vs {best_vbr}kbps)"
+                    status = f"FORMAT_MISMATCH (Current: {file_itag}, Best: {best_itag}{vbr_info})"
                     redownload = True
                 else:
                     status = "FORMAT_MATCH"
@@ -327,7 +328,8 @@ def main():
                         
             elif args.strategy == 'redownload_if_mismatch_vbr_diff':
                 if file_itag != best_itag:
-                    status = f"FORMAT_MISMATCH (Current: {file_itag}, Best: {best_itag})"
+                    vbr_info = f" (VBR: {file_vbr}kbps vs {best_vbr}kbps)"
+                    status = f"FORMAT_MISMATCH (Current: {file_itag}, Best: {best_itag}{vbr_info})"
                     redownload = True
                 else:
                     if best_vbr is not None and file_vbr is not None:
@@ -346,7 +348,8 @@ def main():
                     status = "FORMAT_MATCH"
                     redownload = True
                 else:
-                    status = f"FORMAT_MISMATCH (Current: {file_itag}, Best: {best_itag})"
+                    vbr_info = f" (VBR: {file_vbr}kbps vs {best_vbr}kbps)"
+                    status = f"FORMAT_MISMATCH (Current: {file_itag}, Best: {best_itag}{vbr_info})"
                     redownload = False
 
             # ANSI color codes
