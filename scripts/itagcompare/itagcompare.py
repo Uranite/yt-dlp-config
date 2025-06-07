@@ -5,9 +5,10 @@ import argparse
 import subprocess
 from datetime import datetime
 import yt_dlp
-from yt_dlp import YoutubeDL
+from yt_dlp import parse_options, YoutubeDL
 from yt_dlp.extractor.youtube import _video
 import json
+import shlex
 
 class Logger:
     def __init__(self):
@@ -129,6 +130,18 @@ def find_downloaded_files(folder, video_id, base_name, use_base_name_fallback=Fa
         matched = [f for f in files if base_name in f]
     return matched
 
+def parse_yt_dlp_conf(config_path):
+    args_list = []
+    if not config_path or not os.path.isfile(config_path):
+        return args_list
+    with open(config_path, encoding='utf-8') as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith('#'):
+                continue
+            args_list.extend(shlex.split(line))
+    return args_list
+
 def perform_redownload(args, yt_id, title, folder, backup_root, redownload_dir, dry_run, max_retries=5):
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     backup_dir = os.path.join(backup_root, f"{yt_id}_{timestamp}")
@@ -143,14 +156,20 @@ def perform_redownload(args, yt_id, title, folder, backup_root, redownload_dir, 
         print(f"[WARN] No files found to back up for {yt_id}. Skipping.")
         return
 
+    conf_args = parse_yt_dlp_conf(args.config)
+    # print("CONF ARGS:", conf_args)
+
     for attempt in range(1, max_retries + 1):
         logger = Logger()
-        ydl_opts = {
-            'quiet': True,
-            'logger': logger,
-            'paths': {'home': redownload_dir},
-            'config_locations': [args.config] if args.config else None
-        }
+
+        parsed = parse_options(conf_args)
+        ydl_opts = parsed.ydl_opts
+        #print("YDL OPTS:", ydl_opts)
+
+        ydl_opts['quiet'] = True
+        ydl_opts['logger'] = logger
+        ydl_opts['paths'] = {'home': redownload_dir}
+
         try:
             with YoutubeDL(ydl_opts) as ydl:
                 ydl.download([f"https://www.youtube.com/watch?v={yt_id}"])
