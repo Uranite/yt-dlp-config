@@ -202,11 +202,11 @@ def main():
                               default='better_format',
                               help='''
                               Redownload strategy:
-                              - better_format: redownload if live format is better (default)
-                              - better_format_vbr: like better_format but also checks VBR if formats match
-                              - better_format_vbr_diff: like better_format but redownloads if VBR is different, regardless of which is better
-                              - mismatch: redownload if format doesn't match live formats
-                              - mismatch_vbr_diff: like mismatch, but if the format matches, redownloads if VBR is different, regardless of which is better
+                              - better_format: Redownload if the live format is better (default).
+                              - better_format_vbr: Like better_format, but also checks VBR if formats match.
+                              - better_format_vbr_diff: Like better_format, but redownloads if VBR differs, regardless of which is better.
+                              - mismatch: Redownload if the format doesn't match the live formats.
+                              - mismatch_vbr_diff: Like mismatch, but if the format matches, redownloads if VBR differs, regardless of which is better.
                               ''')
     
     parser.add_argument('--filter-format', nargs='+', 
@@ -215,6 +215,8 @@ def main():
     args = parser.parse_args()
 
     folder = os.path.abspath(args.folder)
+    args.config = os.path.abspath(args.config)
+    # print(f"[DEBUG] Using config file: {args.config}")
     backup_root = args.backup_dir or os.path.join(folder, 'temp_backup')
     redownload_dir = os.path.join(folder, 'temp_download')
     
