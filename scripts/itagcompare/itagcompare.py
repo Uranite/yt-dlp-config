@@ -15,6 +15,10 @@ class Logger:
         self.warnings = []
 
     def debug(self, msg):
+        if not msg.startswith('[debug] '):
+            self.info(msg)
+
+    def info(self, msg):
         pass
 
     def warning(self, msg):
