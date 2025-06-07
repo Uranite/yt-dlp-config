@@ -28,6 +28,9 @@ def extract_info_from_json(json_path):
         with open(json_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
 
+        if data.get('_type') != 'video':
+            return None, None, None, None
+
         video_id = data['id']
         format_id = data['format_id']
         vbr = data['vbr']
