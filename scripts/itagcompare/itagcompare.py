@@ -176,8 +176,11 @@ def main():
     parser = argparse.ArgumentParser(description="Compare and redownload YouTube videos based on .info.json metadata.")
     parser.add_argument('-f', '--folder', required=True, 
                       help='Directory containing downloaded videos and their .info.json files')
-    parser.add_argument('-o', '--output', required=True, 
-                      help='Output file path for saving comparison results')
+    log_group = parser.add_mutually_exclusive_group()
+    log_group.add_argument('-l', '--log', 
+                         help='Log file path for saving comparison results')
+    log_group.add_argument('--log-auto', action='store_true',
+                         help='Automatically determine log file location in the input folder')
     parser.add_argument('--dry-run', action='store_true', 
                       help='Run without making any changes to files')
     parser.add_argument('--config', default='yt-dlp.conf', 
@@ -212,13 +215,21 @@ def main():
     folder = os.path.abspath(args.folder)
     backup_root = args.backup_dir or os.path.join(folder, 'temp_backup')
     redownload_dir = os.path.join(folder, 'temp_download')
+    
+    log_file = os.path.join(folder, 'itagcompare.log') if args.log_auto else args.log
     if not args.dry_run:
         os.makedirs(redownload_dir, exist_ok=True)
 
     itag_rankings = get_master_format_rankings()
     seen_ids = set()
-
-    with open(args.output, 'w', encoding='utf-8') as out:
+    
+    # Only open log file if logging is enabled
+    out = None
+    if log_file:
+        out = open(log_file, 'w', encoding='utf-8')
+        print(f"[INFO] Logging to {log_file}")
+    
+    try:
         for filename in os.listdir(folder):
             if not filename.endswith('.info.json'):
                 continue
@@ -335,28 +346,23 @@ def main():
                     status = f"FORMAT_MISMATCH (Current: {file_itag}, Best: {best_itag})"
                     redownload = False
 
-            VISIBLE_STATUSES = {
-                "BETTER_FORMAT",
-                "BETTER_VBR",
-                "FORMAT_MISMATCH",
-                "CHECK_FAILED",
-                "UNKNOWN",
-                "DIFFERENT_VBR",
-                "FORMAT_MATCH_VBR_MISMATCH",
-            }
-
-            if args.verbose or any(status.startswith(s) for s in VISIBLE_STATUSES):
-                report_line = f"{filename}: File Itag: {file_itag} (Rank {file_rank}), Best Itag: {best_itag} (Rank {best_rank}) - {status}\n"
-                out.write(report_line)
-                print(report_line.strip())
+            report_line = f"{filename}: File Itag: {file_itag} (Rank {file_rank}), Best Itag: {best_itag} (Rank {best_rank}) - {status}"
+            if redownload or args.verbose:
+                print(report_line)
+                if out is not None:
+                    out.write(report_line + '\n')
 
             if redownload and not args.dry_run:
                 perform_redownload(args, yt_id, title, folder, backup_root, redownload_dir, args.dry_run)
 
-    if not args.dry_run:
-        if os.path.exists(redownload_dir) and not os.listdir(redownload_dir):
-            os.rmdir(redownload_dir)
-    print("\n[INFO] Process completed.")
+    finally:
+        if not args.dry_run:
+            if os.path.exists(redownload_dir) and not os.listdir(redownload_dir):
+                os.rmdir(redownload_dir)
+        if out is not None:
+            out.close()
+            print(f"[INFO] Log saved to {log_file}")
+        print("\n[INFO] Process completed.")
 
 if __name__ == "__main__":
     main()
