@@ -346,7 +346,23 @@ def main():
                     status = f"FORMAT_MISMATCH (Current: {file_itag}, Best: {best_itag})"
                     redownload = False
 
-            report_line = f"{filename}: File Itag: {file_itag} (Rank {file_rank}), Best Itag: {best_itag} (Rank {best_rank}) - {status}"
+            # ANSI color codes
+            GREEN = '\033[92m'
+            BLUE = '\033[94m'
+            YELLOW = '\033[93m'
+            END = '\033[0m'
+            
+            file_itag_colored = f"{GREEN}{file_itag}{END}" if file_itag else "N/A"
+            file_rank_colored = f"{BLUE}{file_rank}{END}" if file_rank is not None else "N/A"
+            best_itag_colored = f"{GREEN}{best_itag}{END}" if best_itag else "N/A"
+            best_rank_colored = f"{BLUE}{best_rank}{END}" if best_rank is not None else "N/A"
+            
+            # Color the status if it indicates a change
+            status_colored = status
+            if redownload:
+                status_colored = f"{YELLOW}{status}{END}"
+                
+            report_line = f"{filename}: File Itag: {file_itag_colored} (Rank {file_rank_colored}), Best Itag: {best_itag_colored} (Rank {best_rank_colored}) - {status_colored}"
             if redownload or args.verbose:
                 print(report_line)
                 if out is not None:
