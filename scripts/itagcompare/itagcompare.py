@@ -160,10 +160,17 @@ def perform_redownload(args, yt_id, title, folder, backup_root, redownload_dir, 
 
     conf_args = parse_yt_dlp_conf(args.config)
     # print("CONF ARGS:", conf_args)
+    success = False
 
     for attempt in range(1, max_retries + 1):
-        logger = Logger()
+        # Clean up redownload directory before each attempt
+        for f in os.listdir(redownload_dir):
+            try:
+                os.remove(os.path.join(redownload_dir, f))
+            except Exception as e:
+                print(f"[WARN] Failed to clean up {f}: {e}")
 
+        logger = Logger()
         parsed = parse_options(conf_args)
         ydl_opts = parsed.ydl_opts
         #print("YDL OPTS:", ydl_opts)
@@ -177,19 +184,27 @@ def perform_redownload(args, yt_id, title, folder, backup_root, redownload_dir, 
                 ydl.download([f"https://www.youtube.com/watch?v={yt_id}"])
 
             if logger.warnings:
-                # print(f"[Attempt {attempt}] Warning detected, retrying...")
+                print(f"[Attempt {attempt}] Warning detected, retrying...")
                 continue
 
+            # Check if download was successful
+            downloaded_files = find_downloaded_files(redownload_dir, yt_id, title, args.use_title_matching)
+            if not downloaded_files:
+                print(f"[Attempt {attempt}] No files downloaded, retrying...")
+                continue
+
+            success = True
             break
+
         except Exception as e:
             print(f"[Attempt {attempt}] yt-dlp error: {e}")
             continue
 
-    downloaded_files = find_downloaded_files(redownload_dir, yt_id, title, args.use_title_matching)
-    if not downloaded_files:
-        print(f"[ERROR] Redownload failed for {yt_id}. Backup preserved at: {backup_dir}")
+    if not success:
+        print(f"[ERROR] All {max_retries} download attempts failed for {yt_id}. Backup preserved at: {backup_dir}")
         return
 
+    downloaded_files = find_downloaded_files(redownload_dir, yt_id, title, args.use_title_matching)
     for f in downloaded_files:
         shutil.move(os.path.join(redownload_dir, f), os.path.join(folder, f))
 
