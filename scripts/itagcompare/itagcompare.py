@@ -330,16 +330,7 @@ def main():
                     else:
                         status = "WORSE"
                         redownload = False
-                        
-            elif args.strategy == 'mismatch':
-                if file_itag != best_itag:
-                    vbr_info = f" (VBR: {file_vbr}kbps vs {best_vbr}kbps)"
-                    status = f"FORMAT_MISMATCH (Current: {file_itag}, Best: {best_itag}{vbr_info})"
-                    redownload = True
-                else:
-                    status = "FORMAT_MATCH"
-                    redownload = False
-                        
+
             elif args.strategy == 'better_format_vbr_diff':
                 if file_itag == best_itag:
                     if best_vbr is not None and file_vbr is not None:
@@ -362,22 +353,27 @@ def main():
                     else:
                         status = "WORSE"
                         redownload = False
-                        
+
+            elif args.strategy == 'mismatch':
+                if file_itag != best_itag:
+                    vbr_info = f" (VBR: {file_vbr}kbps vs {best_vbr}kbps)"
+                    status = f"FORMAT_MISMATCH (Current: {file_itag}, Best: {best_itag}{vbr_info})"
+                    redownload = True
+                else:
+                    status = "FORMAT_MATCH"
+                    redownload = False
+                    
             elif args.strategy == 'mismatch_vbr_diff':
                 if file_itag != best_itag:
                     vbr_info = f" (VBR: {file_vbr}kbps vs {best_vbr}kbps)"
                     status = f"FORMAT_MISMATCH (Current: {file_itag}, Best: {best_itag}{vbr_info})"
                     redownload = True
                 else:
-                    if best_vbr is not None and file_vbr is not None:
-                        if best_vbr != file_vbr:
-                            status = f"FORMAT_MATCH_VBR_MISMATCH (Current: {file_vbr}kbps, Live: {best_vbr}kbps)"
-                            redownload = True
-                        else:
-                            status = "FORMAT_MATCH_VBR_MATCH"
-                            redownload = False
+                    if best_vbr != file_vbr:
+                        status = f"FORMAT_MATCH_VBR_MISMATCH (Current: {file_vbr}kbps, Live: {best_vbr}kbps)"
+                        redownload = True
                     else:
-                        status = "FORMAT_MATCH (VBR not available)"
+                        status = "FORMAT_MATCH_VBR_MATCH"
                         redownload = False
                         
             # ANSI color codes
