@@ -199,8 +199,7 @@ def perform_redownload(args, yt_id, title, folder, backup_root, redownload_dir, 
             continue
 
     if not success:
-        print(
-            f"[ERROR] All {max_retries} download attempts failed for {yt_id}. Backup preserved at: {backup_dir}")
+        print(f"[ERROR] All {max_retries} download attempts failed for {yt_id}. Backup preserved at: {backup_dir}")
         return
 
     downloaded_files = find_downloaded_files(redownload_dir, yt_id, title, args.use_title_matching)
@@ -237,13 +236,13 @@ def main():
                                          'better_format_vbr_diff', 'mismatch', 'mismatch_vbr_diff'],
                                 default='better_format',
                                 help='''
-                              Redownload strategy:
-                              - better_format: Redownload if the live format is better (default).
-                              - better_format_vbr: Like better_format, but also checks VBR if formats match.
-                              - better_format_vbr_diff: Like better_format, but redownloads if VBR differs, regardless of which is better.
-                              - mismatch: Redownload if the format doesn't match the live formats.
-                              - mismatch_vbr_diff: Like mismatch, but if the format matches, redownloads if VBR differs, regardless of which is better.
-                              ''')
+                                Redownload strategy:
+                                - better_format: Redownload if the live format is better (default).
+                                - better_format_vbr: Like better_format, but also checks VBR if formats match.
+                                - better_format_vbr_diff: Like better_format, but redownloads if VBR differs, regardless of which is better.
+                                - mismatch: Redownload if the format doesn't match the live formats.
+                                - mismatch_vbr_diff: Like mismatch, but if the format matches, redownloads if VBR differs, regardless of which is better.
+                                ''')
 
     parser.add_argument('--filter-format', nargs='+',
                         help='Only process videos with these format IDs (e.g., 401 402 303)')
