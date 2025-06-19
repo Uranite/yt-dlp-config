@@ -163,7 +163,7 @@ def perform_redownload(args, yt_id, title, folder, backup_root, redownload_dir, 
     success = False
 
     for attempt in range(1, max_retries + 1):
-        # Clean up redownload directory before each attempt
+        # crappy workaround
         for f in os.listdir(redownload_dir):
             try:
                 os.remove(os.path.join(redownload_dir, f))
@@ -187,7 +187,6 @@ def perform_redownload(args, yt_id, title, folder, backup_root, redownload_dir, 
                 print(f"[Attempt {attempt}] Warning detected, retrying...")
                 continue
 
-            # Check if download was successful
             downloaded_files = find_downloaded_files(redownload_dir, yt_id, title, args.use_title_matching)
             if not downloaded_files:
                 print(f"[Attempt {attempt}] No files downloaded, retrying...")
