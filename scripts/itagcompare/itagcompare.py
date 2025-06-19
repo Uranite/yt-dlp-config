@@ -54,7 +54,7 @@ def get_master_format_rankings():
     formats_list = []
     for itag, fmt in formats.items():
         fmt = fmt.copy()
-        fmt['format_id'] = str(itag)
+        fmt['format_id'] = itag
         if 'url' not in fmt:
             fmt['url'] = f'https://dummy/{itag}'
         formats_list.append(fmt)
