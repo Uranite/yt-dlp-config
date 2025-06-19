@@ -1,14 +1,13 @@
-import os
-import re
-import shutil
 import argparse
-import subprocess
-from datetime import datetime
-import yt_dlp
-from yt_dlp import parse_options, YoutubeDL
-from yt_dlp.extractor.youtube import _video
 import json
+import os
 import shlex
+import shutil
+from datetime import datetime
+
+import yt_dlp
+from yt_dlp import YoutubeDL, parse_options
+from yt_dlp.extractor.youtube import _video
 
 class Logger:
     def __init__(self):
@@ -67,7 +66,7 @@ def get_master_format_rankings():
 
     itag_rank_map = {}
     current_rank = 1
-    for fmt in reversed(info_dict['formats']): # Best to worst
+    for fmt in reversed(info_dict['formats']):  # Best to worst
         itag = fmt['format_id']
         if itag == '616':
             continue
@@ -109,14 +108,14 @@ def move_files(src_folder, dest_folder, video_id, base_name, use_base_name_fallb
         os.makedirs(dest_folder)
     moved = []
     files = os.listdir(src_folder)
-    
+
     for filename in files:
         if video_id in filename:
             src = os.path.join(src_folder, filename)
             dest = os.path.join(dest_folder, filename)
             shutil.move(src, dest)
             moved.append(filename)
-    
+
     if not moved and use_base_name_fallback and base_name:
         for filename in files:
             if base_name in filename:
@@ -124,7 +123,7 @@ def move_files(src_folder, dest_folder, video_id, base_name, use_base_name_fallb
                 dest = os.path.join(dest_folder, filename)
                 shutil.move(src, dest)
                 moved.append(filename)
-    
+
     return moved
 
 def find_downloaded_files(folder, video_id, base_name, use_base_name_fallback=False):
@@ -173,7 +172,7 @@ def perform_redownload(args, yt_id, title, folder, backup_root, redownload_dir, 
         logger = Logger()
         parsed = parse_options(conf_args)
         ydl_opts = parsed.ydl_opts
-        #print("YDL OPTS:", ydl_opts)
+        # print("YDL OPTS:", ydl_opts)
 
         ydl_opts['quiet'] = True
         ydl_opts['logger'] = logger
@@ -200,7 +199,8 @@ def perform_redownload(args, yt_id, title, folder, backup_root, redownload_dir, 
             continue
 
     if not success:
-        print(f"[ERROR] All {max_retries} download attempts failed for {yt_id}. Backup preserved at: {backup_dir}")
+        print(
+            f"[ERROR] All {max_retries} download attempts failed for {yt_id}. Backup preserved at: {backup_dir}")
         return
 
     downloaded_files = find_downloaded_files(redownload_dir, yt_id, title, args.use_title_matching)
@@ -212,30 +212,31 @@ def perform_redownload(args, yt_id, title, folder, backup_root, redownload_dir, 
 
 def main():
     parser = argparse.ArgumentParser(description="Compare and redownload YouTube videos based on .info.json metadata.")
-    parser.add_argument('-f', '--folder', required=True, 
-                      help='Directory containing downloaded videos and their .info.json files')
+    parser.add_argument('-f', '--folder', required=True,
+                        help='Directory containing downloaded videos and their .info.json files')
     log_group = parser.add_mutually_exclusive_group()
-    log_group.add_argument('-l', '--log', 
-                         help='Log file path for saving comparison results')
+    log_group.add_argument('-l', '--log',
+                           help='Log file path for saving comparison results')
     log_group.add_argument('--log-auto', action='store_true',
-                         help='Automatically determine log file location in the input folder')
-    parser.add_argument('--dry-run', action='store_true', 
-                      help='Run without making any changes to files')
-    parser.add_argument('--config', default='yt-dlp.conf', 
-                      help='Custom yt-dlp configuration file path')
-    parser.add_argument('--backup-dir', 
-                      help='Custom directory for storing backups of original files')
-    parser.add_argument('--verbose', action='store_true', 
-                      help='Show all comparison results, including matches')
+                           help='Automatically determine log file location in the input folder')
+    parser.add_argument('--dry-run', action='store_true',
+                        help='Run without making any changes to files')
+    parser.add_argument('--config', default='yt-dlp.conf',
+                        help='Custom yt-dlp configuration file path')
+    parser.add_argument('--backup-dir',
+                        help='Custom directory for storing backups of original files')
+    parser.add_argument('--verbose', action='store_true',
+                        help='Show all comparison results, including matches')
     # I didn't test this
-    parser.add_argument('--use-title-matching', action='store_true', 
-                      help='Match files by title when video ID is not found in filename')
-    
+    parser.add_argument('--use-title-matching', action='store_true',
+                        help='Match files by title when video ID is not found in filename')
+
     strategy_group = parser.add_mutually_exclusive_group()
-    strategy_group.add_argument('--strategy', 
-                              choices=['better_format', 'better_format_vbr', 'better_format_vbr_diff', 'mismatch', 'mismatch_vbr_diff'],
-                              default='better_format',
-                              help='''
+    strategy_group.add_argument('--strategy',
+                                choices=['better_format', 'better_format_vbr',
+                                         'better_format_vbr_diff', 'mismatch', 'mismatch_vbr_diff'],
+                                default='better_format',
+                                help='''
                               Redownload strategy:
                               - better_format: Redownload if the live format is better (default).
                               - better_format_vbr: Like better_format, but also checks VBR if formats match.
@@ -243,10 +244,10 @@ def main():
                               - mismatch: Redownload if the format doesn't match the live formats.
                               - mismatch_vbr_diff: Like mismatch, but if the format matches, redownloads if VBR differs, regardless of which is better.
                               ''')
-    
-    parser.add_argument('--filter-format', nargs='+', 
-                      help='Only process videos with these format IDs (e.g., 401 402 303)')
-    
+
+    parser.add_argument('--filter-format', nargs='+',
+                        help='Only process videos with these format IDs (e.g., 401 402 303)')
+
     args = parser.parse_args()
 
     folder = os.path.abspath(args.folder)
@@ -254,20 +255,20 @@ def main():
     # print(f"[DEBUG] Using config file: {args.config}")
     backup_root = args.backup_dir or os.path.join(folder, 'temp_backup')
     redownload_dir = os.path.join(folder, 'temp_download')
-    
+
     log_file = os.path.join(folder, 'itagcompare.log') if args.log_auto else args.log
     if not args.dry_run:
         os.makedirs(redownload_dir, exist_ok=True)
 
     itag_rankings = get_master_format_rankings()
     seen_ids = set()
-    
+
     # Only open log file if logging is enabled
     out = None
     if log_file:
         out = open(log_file, 'w', encoding='utf-8')
         print(f"[INFO] Logging to {log_file}")
-    
+
     try:
         for filename in os.listdir(folder):
             if not filename.endswith('.info.json'):
@@ -283,15 +284,15 @@ def main():
                 if args.verbose:
                     print(f"[SKIP] {filename}: Format {file_itag} not in filter list")
                 continue
-                
+
             best_itag, best_vbr = get_best_live_format(yt_id)
             if best_itag is None:
                 print(f"[ERROR] Could not determine best format for {yt_id}. Skipping.")
                 continue
-                
+
             file_rank = itag_rankings.get(file_itag)
             best_rank = itag_rankings.get(best_itag)
-            
+
             if args.strategy == 'better_format':
                 if file_itag == best_itag:
                     status = "MATCH"
@@ -306,7 +307,7 @@ def main():
                     else:
                         status = "WORSE"
                         redownload = False
-                        
+
             elif args.strategy == 'better_format_vbr':
                 if file_itag == best_itag:
                     if best_vbr is not None and file_vbr is not None:
@@ -361,7 +362,7 @@ def main():
                 else:
                     status = "FORMAT_MATCH"
                     redownload = False
-                    
+
             elif args.strategy == 'mismatch_vbr_diff':
                 if file_itag != best_itag:
                     vbr_info = f" (VBR: {file_vbr}kbps vs {best_vbr}kbps)"
@@ -374,23 +375,22 @@ def main():
                     else:
                         status = "FORMAT_MATCH_VBR_MATCH"
                         redownload = False
-                        
+
             # ANSI color codes
             GREEN = '\033[92m'
             BLUE = '\033[94m'
             YELLOW = '\033[93m'
             END = '\033[0m'
-            
+
             file_itag_colored = f"{GREEN}{file_itag}{END}" if file_itag else "N/A"
             file_rank_colored = f"{BLUE}{file_rank}{END}" if file_rank is not None else "N/A"
             best_itag_colored = f"{GREEN}{best_itag}{END}" if best_itag else "N/A"
             best_rank_colored = f"{BLUE}{best_rank}{END}" if best_rank is not None else "N/A"
-            
-            # Color the status if it indicates a change
+
             status_colored = status
             if redownload:
                 status_colored = f"{YELLOW}{status}{END}"
-                
+
             report_line = f"{filename}: File Itag: {file_itag_colored} (Rank {file_rank_colored}), Best Itag: {best_itag_colored} (Rank {best_rank_colored}) - {status_colored}"
             if redownload or args.verbose:
                 print(report_line)
