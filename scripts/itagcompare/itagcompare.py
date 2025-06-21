@@ -13,6 +13,13 @@ class Logger:
     def __init__(self):
         self.warnings = []
 
+    def debug(self, msg):
+        if not msg.startswith('[debug] '):
+            self.info(msg)
+
+    def info(self, msg):
+        pass
+
     def warning(self, msg):
         self.warnings.append(msg)
         # print(f"[Warning]: {msg}")
@@ -202,6 +209,35 @@ def perform_redownload(args, yt_id, title, folder, backup_root, redownload_dir, 
     for f in os.listdir(redownload_dir):
         os.remove(os.path.join(redownload_dir, f))
 
+def get_redownload_status(strategy, file_itag, best_itag, file_rank, best_rank, file_vbr, best_vbr):
+    if file_rank is None or best_rank is None:
+        return "UNKNOWN_RANK", False
+
+    if strategy in ['better_format', 'better_format_vbr', 'better_format_vbr_diff']:
+        if best_rank < file_rank:
+            return f"BETTER_FORMAT ({file_itag} -> {best_itag})", True
+        if best_rank > file_rank:
+            return "WORSE_FORMAT", False
+        if strategy == 'better_format_vbr' and best_vbr and file_vbr and best_vbr > file_vbr:
+            return f"BETTER_VBR ({file_vbr}kbps -> {best_vbr}kbps)", True
+        if strategy == 'better_format_vbr_diff' and best_vbr != file_vbr:
+            return f"DIFFERENT_VBR ({file_vbr}kbps vs {best_vbr}kbps)", True
+        return "MATCH", False
+
+    if strategy == 'mismatch':
+        if file_itag != best_itag:
+            return f"FORMAT_MISMATCH ({file_itag} vs {best_itag})", True
+        return "MATCH", False
+
+    if strategy == 'mismatch_vbr_diff':
+        if file_itag != best_itag:
+            return f"FORMAT_MISMATCH ({file_itag} vs {best_itag})", True
+        if best_vbr != file_vbr:
+            return f"VBR_MISMATCH ({file_vbr}kbps vs {best_vbr}kbps)", True
+        return "MATCH", False
+
+    return "NO_ACTION", False
+
 def main():
     parser = argparse.ArgumentParser(description="Compare and redownload YouTube videos based on .info.json metadata.")
     parser.add_argument('-f', '--folder', required=True,
@@ -255,10 +291,9 @@ def main():
     itag_rankings = get_master_format_rankings()
     seen_ids = set()
 
-    # Only open log file if logging is enabled
-    out = None
+    out_file = None
     if log_file:
-        out = open(log_file, 'w', encoding='utf-8')
+        out_file = open(log_file, 'w', encoding='utf-8')
         print(f"[INFO] Logging to {log_file}")
 
     try:
@@ -285,88 +320,9 @@ def main():
             file_rank = itag_rankings.get(file_itag)
             best_rank = itag_rankings.get(best_itag)
 
-            if args.strategy == 'better_format':
-                if file_itag == best_itag:
-                    status = "MATCH"
-                    redownload = False
-                elif file_rank is None or best_rank is None:
-                    status = "UNKNOWN"
-                    redownload = False
-                else:
-                    if best_rank < file_rank:  # Lower rank is better
-                        status = f"BETTER_FORMAT ({file_itag} -> {best_itag})"
-                        redownload = True
-                    else:
-                        status = "WORSE"
-                        redownload = False
-
-            elif args.strategy == 'better_format_vbr':
-                if file_itag == best_itag:
-                    if best_vbr is not None and file_vbr is not None:
-                        if best_vbr > file_vbr:
-                            status = f"BETTER_VBR ({file_vbr} -> {best_vbr}kbps)"
-                            redownload = True
-                        else:
-                            status = "SAME_VBR"
-                            redownload = False
-                    else:
-                        status = "MATCH (VBR not available)"
-                        redownload = False
-                elif file_rank is None or best_rank is None:
-                    status = "UNKNOWN"
-                    redownload = False
-                else:
-                    if best_rank < file_rank:
-                        status = f"BETTER_FORMAT ({file_itag} -> {best_itag})"
-                        redownload = True
-                    else:
-                        status = "WORSE"
-                        redownload = False
-
-            elif args.strategy == 'better_format_vbr_diff':
-                if file_itag == best_itag:
-                    if best_vbr is not None and file_vbr is not None:
-                        if best_vbr != file_vbr:
-                            status = f"DIFFERENT_VBR (Current: {file_vbr}kbps, Live: {best_vbr}kbps)"
-                            redownload = True
-                        else:
-                            status = "SAME_VBR"
-                            redownload = False
-                    else:
-                        status = "MATCH (VBR not available)"
-                        redownload = False
-                elif file_rank is None or best_rank is None:
-                    status = "UNKNOWN"
-                    redownload = False
-                else:
-                    if best_rank < file_rank:  # Lower rank is better
-                        status = f"BETTER_FORMAT ({file_itag} -> {best_itag})"
-                        redownload = True
-                    else:
-                        status = "WORSE"
-                        redownload = False
-
-            elif args.strategy == 'mismatch':
-                if file_itag != best_itag:
-                    vbr_info = f" (VBR: {file_vbr}kbps vs {best_vbr}kbps)"
-                    status = f"FORMAT_MISMATCH (Current: {file_itag}, Best: {best_itag}{vbr_info})"
-                    redownload = True
-                else:
-                    status = "FORMAT_MATCH"
-                    redownload = False
-
-            elif args.strategy == 'mismatch_vbr_diff':
-                if file_itag != best_itag:
-                    vbr_info = f" (VBR: {file_vbr}kbps vs {best_vbr}kbps)"
-                    status = f"FORMAT_MISMATCH (Current: {file_itag}, Best: {best_itag}{vbr_info})"
-                    redownload = True
-                else:
-                    if best_vbr != file_vbr:
-                        status = f"FORMAT_MATCH_VBR_MISMATCH (Current: {file_vbr}kbps, Live: {best_vbr}kbps)"
-                        redownload = True
-                    else:
-                        status = "FORMAT_MATCH_VBR_MATCH"
-                        redownload = False
+            status, redownload = get_redownload_status(
+                args.strategy, file_itag, best_itag, file_rank, best_rank, file_vbr, best_vbr
+            )
 
             # ANSI color codes
             GREEN = '\033[92m'
@@ -374,20 +330,21 @@ def main():
             YELLOW = '\033[93m'
             END = '\033[0m'
 
-            file_itag_colored = f"{GREEN}{file_itag}{END}" if file_itag else "N/A"
+            file_itag_colored = f"{GREEN}{file_itag}{END}"
             file_rank_colored = f"{BLUE}{file_rank}{END}" if file_rank is not None else "N/A"
-            best_itag_colored = f"{GREEN}{best_itag}{END}" if best_itag else "N/A"
+            best_itag_colored = f"{GREEN}{best_itag}{END}"
             best_rank_colored = f"{BLUE}{best_rank}{END}" if best_rank is not None else "N/A"
+            status_colored = f"{YELLOW}{status}{END}" if redownload else status
 
-            status_colored = status
-            if redownload:
-                status_colored = f"{YELLOW}{status}{END}"
+            report_line = (
+                f"{filename}: File Itag: {file_itag_colored} (Rank {file_rank_colored}), "
+                f"Best Itag: {best_itag_colored} (Rank {best_rank_colored}) - {status_colored}"
+            )
 
-            report_line = f"{filename}: File Itag: {file_itag_colored} (Rank {file_rank_colored}), Best Itag: {best_itag_colored} (Rank {best_rank_colored}) - {status_colored}"
             if redownload or args.verbose:
                 print(report_line)
-                if out is not None:
-                    out.write(report_line + '\n')
+                if out_file is not None:
+                    out_file.write(report_line + '\n')
 
             if redownload and not args.dry_run:
                 perform_redownload(args, yt_id, title, folder, backup_root, redownload_dir, args.dry_run)
@@ -396,8 +353,8 @@ def main():
         if not args.dry_run:
             if os.path.exists(redownload_dir) and not os.listdir(redownload_dir):
                 os.rmdir(redownload_dir)
-        if out is not None:
-            out.close()
+        if out_file is not None:
+            out_file.close()
             print(f"[INFO] Log saved to {log_file}")
         print("\n[INFO] Process completed.")
 
