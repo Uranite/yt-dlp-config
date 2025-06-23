@@ -68,8 +68,6 @@ def get_master_format_rankings():
     current_rank = 1
     for fmt in reversed(info_dict['formats']):  # Best to worst
         itag = fmt['format_id']
-        if itag == '616':
-            continue
         itag_rank_map[itag] = current_rank
         current_rank += 1
 
