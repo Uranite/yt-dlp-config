@@ -236,8 +236,6 @@ def get_redownload_status(strategy, file_itag, best_itag, file_rank, best_rank, 
             return f"VBR_MISMATCH ({file_vbr}kbps vs {best_vbr}kbps)", True
         return "MATCH", False
 
-    return "NO_ACTION", False
-
 def main():
     parser = argparse.ArgumentParser(description="Compare and redownload YouTube videos based on .info.json metadata.")
     parser.add_argument('-f', '--folder', required=True,
