@@ -12,8 +12,8 @@ Configuration files for [yt-dlp](https://github.com/yt-dlp/yt-dlp) to archive Yo
 
 1. Clone this repository:
    ```bash
-   git clone https://github.com/Uranite/yt-dlp-configs.git
-   cd yt-dlp-configs
+   git clone https://github.com/Uranite/yt-dlp-config.git
+   cd yt-dlp-config
    ```
 
 2. Install yt-dlp (nightly):
