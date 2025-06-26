@@ -326,19 +326,25 @@ def main():
             YELLOW = '\033[93m'
             END = '\033[0m'
 
-            file_itag_colored = f"{GREEN}{file_itag}{END}"
-            file_rank_colored = f"{BLUE}{file_rank}{END}" if file_rank is not None else "N/A"
-            best_itag_colored = f"{GREEN}{best_itag}{END}"
-            best_rank_colored = f"{BLUE}{best_rank}{END}" if best_rank is not None else "N/A"
-            status_colored = f"{YELLOW}{status}{END}" if redownload else status
-
             report_line = (
-                f"{filename}: File Itag: {file_itag_colored} (Rank {file_rank_colored}), "
-                f"Best Itag: {best_itag_colored} (Rank {best_rank_colored}) - {status_colored}"
+                f"{filename}: File Itag: {file_itag} (Rank {file_rank}), "
+                f"Best Itag: {best_itag} (Rank {best_rank}) - {status}"
             )
 
             if redownload or args.verbose:
-                print(report_line)
+                file_itag_colored = f"{GREEN}{file_itag}{END}"
+                file_rank_colored = f"{BLUE}{file_rank}{END}" if file_rank is not None else "N/A"
+                best_itag_colored = f"{GREEN}{best_itag}{END}"
+                best_rank_colored = f"{BLUE}{best_rank}{END}" if best_rank is not None else "N/A"
+                status_colored = f"{YELLOW}{status}{END}" if redownload else status
+
+                report_line_colored = (
+                    f"{filename}: File Itag: {file_itag_colored} (Rank {file_rank_colored}), "
+                    f"Best Itag: {best_itag_colored} (Rank {best_rank_colored}) - {status_colored}"
+                )
+
+                print(report_line_colored)
+
                 if out_file is not None:
                     out_file.write(report_line + '\n')
 
