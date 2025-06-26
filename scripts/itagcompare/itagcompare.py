@@ -142,6 +142,8 @@ def parse_yt_dlp_conf(config_path):
     return args_list
 
 def perform_redownload(args, yt_id, title, folder, backup_root, redownload_dir, dry_run, max_retries=5):
+    if not dry_run:
+        os.makedirs(redownload_dir, exist_ok=True)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     backup_dir = os.path.join(backup_root, f"{yt_id}_{timestamp}")
 
@@ -281,8 +283,6 @@ def main():
     redownload_dir = os.path.join(folder, 'temp_download')
 
     log_file = os.path.join(folder, 'itagcompare.log') if args.log_auto else args.log
-    if not args.dry_run:
-        os.makedirs(redownload_dir, exist_ok=True)
 
     itag_rankings = get_master_format_rankings()
     seen_ids = set()
