@@ -33,21 +33,19 @@ def extract_info_from_json(json_path):
             data = json.load(f)
 
         if data.get('_type') != 'video':
-            return None, None, None, None
+            return None
 
-        video_id = data['id']
-        format_id = data['format_id']
-        vbr = data['vbr']
+        video_id = data.get('id')
+        format_id = data.get('format_id')
+        vbr = data.get('vbr')
 
-        base_name = os.path.basename(json_path)[:-10]  # Remove .info.json
-
-        if video_id and format_id and base_name:
+        if video_id and format_id:
             video_format_itag = format_id.split('+')[0]
-            return video_id, video_format_itag, base_name, vbr
+            return video_id, video_format_itag, vbr
     except Exception as e:
         print(f"[ERROR] Failed to parse {json_path}: {e}")
 
-    return None, None, None, None
+    return None
 
 def get_master_format_rankings():
     formats = _video.YoutubeIE._formats
@@ -93,7 +91,7 @@ def get_best_live_format(youtube_id, max_retries=5):
                 # print(f"[Attempt {attempt}] Warning detected, retrying...")
                 continue
 
-            return best_format['format_id'], best_format['vbr']
+            return best_format['format_id'], best_format.get('vbr')
         except Exception as e:
             print(f"[Attempt {attempt}] Error: {e}")
             continue
@@ -101,7 +99,7 @@ def get_best_live_format(youtube_id, max_retries=5):
     print("Failed to get a format without warnings.")
     return None, None
 
-def move_files(src_folder, dest_folder, video_id, base_name, use_base_name_fallback=False):
+def move_files(src_folder, dest_folder, video_id):
     if not os.path.exists(dest_folder):
         os.makedirs(dest_folder)
     moved = []
@@ -113,23 +111,11 @@ def move_files(src_folder, dest_folder, video_id, base_name, use_base_name_fallb
             dest = os.path.join(dest_folder, filename)
             shutil.move(src, dest)
             moved.append(filename)
-
-    if not moved and use_base_name_fallback and base_name:
-        for filename in files:
-            if base_name in filename:
-                src = os.path.join(src_folder, filename)
-                dest = os.path.join(dest_folder, filename)
-                shutil.move(src, dest)
-                moved.append(filename)
-
     return moved
 
-def find_downloaded_files(folder, video_id, base_name, use_base_name_fallback=False):
+def find_downloaded_files(folder, video_id):
     files = os.listdir(folder)
-    matched = [f for f in files if video_id in f]
-    if not matched and use_base_name_fallback and base_name:
-        matched = [f for f in files if base_name in f]
-    return matched
+    return [f for f in files if video_id in f]
 
 def parse_yt_dlp_conf(config_path):
     args_list = []
@@ -141,7 +127,7 @@ def parse_yt_dlp_conf(config_path):
             args_list.extend(shlex.split(line))
     return args_list
 
-def perform_redownload(args, yt_id, title, folder, backup_root, redownload_dir, dry_run, max_retries=5):
+def perform_redownload(args, yt_id, folder, backup_root, redownload_dir, dry_run, max_retries=5):
     if not dry_run:
         os.makedirs(redownload_dir, exist_ok=True)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -152,7 +138,7 @@ def perform_redownload(args, yt_id, title, folder, backup_root, redownload_dir, 
     if dry_run:
         return
 
-    moved_files = move_files(folder, backup_dir, yt_id, title, args.use_title_matching)
+    moved_files = move_files(folder, backup_dir, yt_id)
     if not moved_files:
         print(f"[WARN] No files found to back up for {yt_id}. Skipping.")
         return
@@ -162,7 +148,7 @@ def perform_redownload(args, yt_id, title, folder, backup_root, redownload_dir, 
     success = False
 
     for attempt in range(1, max_retries + 1):
-        # crappy workaround
+        # Clean up temporary download directory before retrying
         for f in os.listdir(redownload_dir):
             try:
                 os.remove(os.path.join(redownload_dir, f))
@@ -186,7 +172,7 @@ def perform_redownload(args, yt_id, title, folder, backup_root, redownload_dir, 
                 print(f"[Attempt {attempt}] Warning detected, retrying...")
                 continue
 
-            downloaded_files = find_downloaded_files(redownload_dir, yt_id, title, args.use_title_matching)
+            downloaded_files = find_downloaded_files(redownload_dir, yt_id)
             if not downloaded_files:
                 print(f"[Attempt {attempt}] No files downloaded, retrying...")
                 continue
@@ -202,7 +188,7 @@ def perform_redownload(args, yt_id, title, folder, backup_root, redownload_dir, 
         print(f"[ERROR] All {max_retries} download attempts failed for {yt_id}. Backup preserved at: {backup_dir}")
         return
 
-    downloaded_files = find_downloaded_files(redownload_dir, yt_id, title, args.use_title_matching)
+    downloaded_files = find_downloaded_files(redownload_dir, yt_id)
     for f in downloaded_files:
         shutil.move(os.path.join(redownload_dir, f), os.path.join(folder, f))
 
@@ -218,6 +204,7 @@ def get_redownload_status(strategy, file_itag, best_itag, file_rank, best_rank, 
             return f"BETTER_FORMAT ({file_itag} -> {best_itag})", True
         if best_rank > file_rank:
             return "WORSE_FORMAT", False
+        # Ranks are equal, now check VBR based on strategy
         if strategy == 'better_format_vbr' and best_vbr and file_vbr and best_vbr > file_vbr:
             return f"BETTER_VBR ({file_vbr}kbps -> {best_vbr}kbps)", True
         if strategy == 'better_format_vbr_diff' and best_vbr != file_vbr:
@@ -235,6 +222,8 @@ def get_redownload_status(strategy, file_itag, best_itag, file_rank, best_rank, 
         if best_vbr != file_vbr:
             return f"VBR_MISMATCH ({file_vbr}kbps vs {best_vbr}kbps)", True
         return "MATCH", False
+    
+    return "MATCH", False
 
 def main():
     parser = argparse.ArgumentParser(description="Compare and redownload YouTube videos based on .info.json metadata.")
@@ -253,9 +242,6 @@ def main():
                         help='Custom directory for storing backups of original files')
     parser.add_argument('--verbose', action='store_true',
                         help='Show all comparison results, including matches')
-    # I didn't test this
-    parser.add_argument('--use-title-matching', action='store_true',
-                        help='Match files by title when video ID is not found in filename')
 
     strategy_group = parser.add_mutually_exclusive_group()
     strategy_group.add_argument('--strategy',
@@ -278,7 +264,6 @@ def main():
 
     folder = os.path.abspath(args.folder)
     args.config = os.path.abspath(args.config)
-    # print(f"[DEBUG] Using config file: {args.config}")
     backup_root = args.backup_dir or os.path.join(folder, 'temp_backup')
     redownload_dir = os.path.join(folder, 'temp_download')
 
@@ -298,8 +283,14 @@ def main():
                 continue
 
             json_path = os.path.join(folder, filename)
-            yt_id, file_itag, title, file_vbr = extract_info_from_json(json_path)
-            if not yt_id or not file_itag or yt_id in seen_ids:
+            json_info = extract_info_from_json(json_path)
+            
+            if not json_info:
+                continue
+            
+            yt_id, file_itag, file_vbr = json_info
+            
+            if yt_id in seen_ids:
                 continue
             seen_ids.add(yt_id)
 
@@ -326,11 +317,6 @@ def main():
             YELLOW = '\033[93m'
             END = '\033[0m'
 
-            report_line = (
-                f"{filename}: File Itag: {file_itag} (Rank {file_rank}), "
-                f"Best Itag: {best_itag} (Rank {best_rank}) - {status}"
-            )
-
             if redownload or args.verbose:
                 file_itag_colored = f"{GREEN}{file_itag}{END}"
                 file_rank_colored = f"{BLUE}{file_rank}{END}" if file_rank is not None else "N/A"
@@ -342,14 +328,17 @@ def main():
                     f"{filename}: File Itag: {file_itag_colored} (Rank {file_rank_colored}), "
                     f"Best Itag: {best_itag_colored} (Rank {best_rank_colored}) - {status_colored}"
                 )
-
                 print(report_line_colored)
 
                 if out_file is not None:
+                    report_line = (
+                        f"{filename}: File Itag: {file_itag} (Rank {file_rank}), "
+                        f"Best Itag: {best_itag} (Rank {best_rank}) - {status}"
+                    )
                     out_file.write(report_line + '\n')
 
-            if redownload and not args.dry_run:
-                perform_redownload(args, yt_id, title, folder, backup_root, redownload_dir, args.dry_run)
+            if redownload:
+                perform_redownload(args, yt_id, folder, backup_root, redownload_dir, args.dry_run)
 
     finally:
         if not args.dry_run:
