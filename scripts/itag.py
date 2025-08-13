@@ -3,12 +3,11 @@ import argparse
 
 def list_formats(url, best_only=False):
     ydl_opts = {'quiet': True}
-    
-    # Thanks redditor, turns out you can do this kind of things with yt-dlp (of course)
+
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url, download=False)
         formats = info['formats']
-        
+
         if best_only:
             best = formats[-1]
             print(f"Best format for: {info['title']}\n")
@@ -26,6 +25,6 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='List YouTube format IDs using yt-dlp')
     parser.add_argument('url', help='YouTube video URL')
     parser.add_argument('--best', action='store_true', help='Only show the best (bottommost) format')
-    
+
     args = parser.parse_args()
     list_formats(args.url, best_only=args.best)
