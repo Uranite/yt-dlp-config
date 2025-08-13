@@ -57,7 +57,7 @@ python itagcompare.py [options]
 
 **Example:**
 ```bash
-python itagcompare.py --folder ./downloads --output ./output.txt
+python itagcompare.py --folder .\downloads --log-auto
 ```
 
 ### 5. sort.py

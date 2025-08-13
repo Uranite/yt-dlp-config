@@ -148,7 +148,7 @@ def perform_redownload(args, yt_id, folder, backup_root, redownload_dir, dry_run
     success = False
 
     for attempt in range(1, max_retries + 1):
-        # Clean up temporary download directory before retrying
+        # Clean up temporary download directory before retrying, crappy workaround that seems to work?
         for f in os.listdir(redownload_dir):
             try:
                 os.remove(os.path.join(redownload_dir, f))
@@ -204,7 +204,6 @@ def get_redownload_status(strategy, file_itag, best_itag, file_rank, best_rank, 
             return f"BETTER_FORMAT ({file_itag} -> {best_itag})", True
         if best_rank > file_rank:
             return "WORSE_FORMAT", False
-        # Ranks are equal, now check VBR based on strategy
         if strategy == 'better_format_vbr' and best_vbr and file_vbr and best_vbr > file_vbr:
             return f"BETTER_VBR ({file_vbr}kbps -> {best_vbr}kbps)", True
         if strategy == 'better_format_vbr_diff' and best_vbr != file_vbr:
