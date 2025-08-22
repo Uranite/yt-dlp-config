@@ -225,14 +225,13 @@ def get_redownload_status(strategy, file_itag, best_itag, file_rank, best_rank, 
     return "MATCH", False
 
 def main():
-    parser = argparse.ArgumentParser(description="Compare and redownload YouTube videos based on .info.json metadata.")
+    parser = argparse.ArgumentParser(description="Compare and redownload YouTube videos based on format and/or VBR")
     parser.add_argument('-f', '--folder', required=True,
                         help='Directory containing downloaded videos and their .info.json files')
-    log_group = parser.add_mutually_exclusive_group()
-    log_group.add_argument('-l', '--log',
-                           help='Log file path for saving comparison results')
-    log_group.add_argument('--log-auto', action='store_true',
-                           help='Automatically determine log file location in the input folder')
+    parser.add_argument('-l', '--log',
+                        help='Log file path for saving comparison results')
+    parser.add_argument('--log-auto', action='store_true',
+                        help='Automatically determine log file location in the input folder')
     parser.add_argument('--dry-run', action='store_true',
                         help='Run without making any changes to files')
     parser.add_argument('--config', default='yt-dlp.conf',
