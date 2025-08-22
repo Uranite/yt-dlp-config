@@ -254,7 +254,7 @@ def main():
                         - mismatch_vbr_diff: Like mismatch, but if the format matches, redownloads if VBR differs, regardless of which is better.
                         ''')
     parser.add_argument('--process-format', nargs='+',
-                        help='Only process videos with these format IDs (e.g., 401 402 303)')
+                        help='Only process videos with these format IDs (e.g., 399 400 401)')
 
     args = parser.parse_args()
 
