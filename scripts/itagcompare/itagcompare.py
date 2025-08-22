@@ -289,7 +289,7 @@ def main():
                 continue
             seen_ids.add(yt_id)
 
-            if args.filter_format and file_itag not in args.filter_format:
+            if args.process_format and file_itag not in args.process_format:
                 if args.verbose:
                     print(f"[SKIP] {filename}: Format {file_itag} not in filter list")
                 continue
