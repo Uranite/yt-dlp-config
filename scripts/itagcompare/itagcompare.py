@@ -204,7 +204,7 @@ def get_redownload_status(strategy, file_itag, best_itag, file_rank, best_rank, 
             return f"BETTER_FORMAT ({file_itag} -> {best_itag})", True
         if best_rank > file_rank:
             return "WORSE_FORMAT", False
-        if strategy == 'better_format_vbr' and best_vbr and file_vbr and best_vbr > file_vbr:
+        if strategy == 'better_format_vbr' and best_vbr > file_vbr:
             return f"BETTER_VBR ({file_vbr}kbps -> {best_vbr}kbps)", True
         if strategy == 'better_format_vbr_diff' and best_vbr != file_vbr:
             return f"DIFFERENT_VBR ({file_vbr}kbps vs {best_vbr}kbps)", True
@@ -241,22 +241,19 @@ def main():
                         help='Custom directory for storing backups of original files')
     parser.add_argument('--verbose', action='store_true',
                         help='Show all comparison results, including matches')
-
-    strategy_group = parser.add_mutually_exclusive_group()
-    strategy_group.add_argument('--strategy',
-                                choices=['better_format', 'better_format_vbr',
-                                         'better_format_vbr_diff', 'mismatch', 'mismatch_vbr_diff'],
-                                default='better_format',
-                                help='''
-                                Redownload strategy:
-                                - better_format: Redownload if the live format is better (default).
-                                - better_format_vbr: Like better_format, but also checks VBR if formats match.
-                                - better_format_vbr_diff: Like better_format, but redownloads if VBR differs, regardless of which is better.
-                                - mismatch: Redownload if the format doesn't match the live formats.
-                                - mismatch_vbr_diff: Like mismatch, but if the format matches, redownloads if VBR differs, regardless of which is better.
-                                ''')
-
-    parser.add_argument('--filter-format', nargs='+',
+    parser.add_argument('--strategy',
+                        choices=['better_format', 'better_format_vbr',
+                                 'better_format_vbr_diff', 'mismatch', 'mismatch_vbr_diff'],
+                        default='better_format',
+                        help='''
+                        Redownload strategy:
+                        - better_format: Redownload if the live format is better (default).
+                        - better_format_vbr: Like better_format, but also checks VBR if formats match.
+                        - better_format_vbr_diff: Like better_format, but redownloads if VBR differs, regardless of which is better.
+                        - mismatch: Redownload if the format doesn't match the live formats.
+                        - mismatch_vbr_diff: Like mismatch, but if the format matches, redownloads if VBR differs, regardless of which is better.
+                        ''')
+    parser.add_argument('--process-format', nargs='+',
                         help='Only process videos with these format IDs (e.g., 401 402 303)')
 
     args = parser.parse_args()
