@@ -8,7 +8,7 @@ Configuration files for [yt-dlp](https://github.com/yt-dlp/yt-dlp) to archive Yo
 - [yt-dlp](https://github.com/yt-dlp/yt-dlp)
 - (Optional) [aria2c](https://aria2.github.io/) for potentially faster downloads
 
-## Installation
+## Installation (Windows)
 
 1. Clone this repository:
    ```bash
@@ -18,7 +18,7 @@ Configuration files for [yt-dlp](https://github.com/yt-dlp/yt-dlp) to archive Yo
 
 2. Install yt-dlp (nightly):
    ```bash
-   pip install -U --pre "yt-dlp[default]"
+   pip install -U --pre "yt-dlp[default,curl-cffi]"
    ```
 
 ## Quick Start
@@ -48,12 +48,12 @@ Configuration files for [yt-dlp](https://github.com/yt-dlp/yt-dlp) to archive Yo
 ### Modifying Download Behavior
 Edit the `yt-dlp.conf` file in either the `channel/` or `playlist/` directory to change download settings. Refer to the [yt-dlp documentation](https://github.com/yt-dlp/yt-dlp#usage-and-options) for available options.
 
-## Updating
+## Updating (Windows)
 
 To update yt-dlp to the latest nightly version, run:
 
 ```bash
-pip install -U --pre "yt-dlp[default]"
+pip install -U --pre "yt-dlp[default,curl-cffi]"
 ```
 
 Or use the included update script:
