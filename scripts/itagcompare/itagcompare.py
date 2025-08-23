@@ -22,7 +22,7 @@ class Logger:
 
     def warning(self, msg):
         self.warnings.append(msg)
-        # print(f"[Warning]: {msg}")
+        print(f"[Warning]: {msg}")
 
     def error(self, msg):
         print(f"[Error]: {msg}")
@@ -148,7 +148,7 @@ def perform_redownload(args, yt_id, folder, backup_root, redownload_dir, dry_run
     success = False
 
     for attempt in range(1, max_retries + 1):
-        # Clean up temporary download directory before retrying, crappy workaround that seems to work?
+        # Even if there is an error, yt-dlp can still download some/all the files, just different format
         for f in os.listdir(redownload_dir):
             try:
                 os.remove(os.path.join(redownload_dir, f))
