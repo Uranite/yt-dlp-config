@@ -63,13 +63,14 @@ def get_master_format_rankings():
     ydl.sort_formats(info_dict)
 
     itag_rank_map = {}
-    current_rank = 1
+    current_rank = 0
     for fmt in reversed(info_dict['formats']):  # Best to worst
         itag = fmt['format_id']
         itag_rank_map[itag] = current_rank
         current_rank += 1
 
-    itag_rank_map['616'] = 0
+    # 🥹
+    # itag_rank_map['616'] = 0
     return itag_rank_map
 
 def get_best_live_format(youtube_id, max_retries=5):
