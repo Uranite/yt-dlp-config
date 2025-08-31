@@ -89,7 +89,7 @@ def get_best_live_format(conf_args, youtube_id, max_retries=5):
                 formats = info['formats']
                 best_format = formats[-1]  # Get the best format
 
-            if logger.warnings or logger.error:
+            if logger.warnings:
                 # print(f"[Attempt {attempt}] Warning detected, retrying...")
                 continue
 
