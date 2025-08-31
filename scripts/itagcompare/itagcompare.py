@@ -89,7 +89,7 @@ def get_best_live_format(conf_args, youtube_id, max_retries=5):
                 formats = info['formats']
                 best_format = formats[-1]  # Get the best format
 
-            if logger.warnings:
+            if logger.warnings or logger.error:
                 # print(f"[Attempt {attempt}] Warning detected, retrying...")
                 continue
 
@@ -169,7 +169,7 @@ def perform_redownload(conf_args, yt_id, folder, backup_root, redownload_dir, dr
             with YoutubeDL(ydl_opts) as ydl:
                 ydl.download([f"https://www.youtube.com/watch?v={yt_id}"])
 
-            if logger.warnings:
+            if logger.warnings or logger.error:
                 print(f"[Attempt {attempt}] Warning detected, retrying...")
                 continue
 
