@@ -169,7 +169,7 @@ def perform_redownload(conf_args, yt_id, folder, backup_root, redownload_dir, dr
             with YoutubeDL(ydl_opts) as ydl:
                 ydl.download([f"https://www.youtube.com/watch?v={yt_id}"])
 
-            if logger.warnings or logger.error:
+            if logger.warnings:
                 print(f"[Attempt {attempt}] Warning detected, retrying...")
                 continue
 
