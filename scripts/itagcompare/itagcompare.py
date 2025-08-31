@@ -72,7 +72,7 @@ def get_master_format_rankings():
     itag_rank_map['616'] = 0
     return itag_rank_map
 
-def get_best_live_format(youtube_id, max_retries=5):
+def get_best_live_format(args, youtube_id, max_retries=5):
     url = f"https://www.youtube.com/watch?v={youtube_id}"
     conf_args = parse_yt_dlp_conf(args.config)
 
@@ -297,7 +297,7 @@ def main():
                     print(f"[SKIP] {filename}: Format {file_itag} not in filter list")
                 continue
 
-            best_itag, best_vbr = get_best_live_format(yt_id)
+            best_itag, best_vbr = get_best_live_format(args, yt_id)
             if best_itag is None:
                 print(f"[ERROR] Could not determine best format for {yt_id}. Skipping.")
                 continue
