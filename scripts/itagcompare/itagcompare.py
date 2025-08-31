@@ -72,9 +72,8 @@ def get_master_format_rankings():
     itag_rank_map['616'] = 0
     return itag_rank_map
 
-def get_best_live_format(args, youtube_id, max_retries=5):
+def get_best_live_format(conf_args, youtube_id, max_retries=5):
     url = f"https://www.youtube.com/watch?v={youtube_id}"
-    conf_args = parse_yt_dlp_conf(args.config)
 
     for attempt in range(1, max_retries + 1):
         logger = Logger()
@@ -130,7 +129,7 @@ def parse_yt_dlp_conf(config_path):
             args_list.extend(shlex.split(line))
     return args_list
 
-def perform_redownload(args, yt_id, folder, backup_root, redownload_dir, dry_run, max_retries=5):
+def perform_redownload(conf_args, yt_id, folder, backup_root, redownload_dir, dry_run, max_retries=5):
     if not dry_run:
         os.makedirs(redownload_dir, exist_ok=True)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -146,7 +145,6 @@ def perform_redownload(args, yt_id, folder, backup_root, redownload_dir, dry_run
         print(f"[WARN] No files found to back up for {yt_id}. Skipping.")
         return
 
-    conf_args = parse_yt_dlp_conf(args.config)
     # print("CONF ARGS:", conf_args)
     success = False
 
@@ -265,6 +263,7 @@ def main():
     backup_root = args.backup_dir or os.path.join(folder, 'temp_backup')
     redownload_dir = os.path.join(folder, 'temp_download')
 
+    conf_args = parse_yt_dlp_conf(args.config)
     log_file = os.path.join(folder, 'itagcompare.log') if args.log_auto else args.log
 
     itag_rankings = get_master_format_rankings()
@@ -297,7 +296,7 @@ def main():
                     print(f"[SKIP] {filename}: Format {file_itag} not in filter list")
                 continue
 
-            best_itag, best_vbr = get_best_live_format(args, yt_id)
+            best_itag, best_vbr = get_best_live_format(conf_args, yt_id)
             if best_itag is None:
                 print(f"[ERROR] Could not determine best format for {yt_id}. Skipping.")
                 continue
@@ -336,7 +335,7 @@ def main():
                     out_file.write(report_line + '\n')
 
             if redownload:
-                perform_redownload(args, yt_id, folder, backup_root, redownload_dir, args.dry_run)
+                perform_redownload(conf_args, yt_id, folder, backup_root, redownload_dir, args.dry_run)
 
     finally:
         if not args.dry_run:
