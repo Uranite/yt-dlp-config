@@ -74,13 +74,16 @@ def get_master_format_rankings():
 
 def get_best_live_format(youtube_id, max_retries=5):
     url = f"https://www.youtube.com/watch?v={youtube_id}"
+    conf_args = parse_yt_dlp_conf(args.config)
 
     for attempt in range(1, max_retries + 1):
         logger = Logger()
-        ydl_opts = {
-            'quiet': True,
-            'logger': logger
-        }
+        parsed = parse_options(conf_args)
+        ydl_opts = parsed.ydl_opts
+        # print("YDL OPTS:", ydl_opts)
+
+        ydl_opts['quiet'] = True
+        ydl_opts['logger'] = logger
         try:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(url, download=False)
