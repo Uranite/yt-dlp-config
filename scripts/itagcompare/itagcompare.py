@@ -12,6 +12,7 @@ from yt_dlp.extractor.youtube import _video
 class Logger:
     def __init__(self):
         self.warnings = []
+        self.errors = []
 
     def debug(self, msg):
         if not msg.startswith('[debug] '):
@@ -130,22 +131,12 @@ def parse_yt_dlp_conf(config_path):
     return args_list
 
 def perform_redownload(conf_args, yt_id, folder, backup_root, redownload_dir, dry_run, max_retries=5):
-    if not dry_run:
-        os.makedirs(redownload_dir, exist_ok=True)
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    backup_dir = os.path.join(backup_root, f"{yt_id}_{timestamp}")
-
-    print(f"\n[INFO] Redownloading {yt_id}, backing up to {backup_dir}")
-
+    print(f"\n[INFO] Attempting redownload for {yt_id}...")
     if dry_run:
+        print(f"[DRY RUN] Would attempt redownload for {yt_id}.")
         return
 
-    moved_files = move_files(folder, backup_dir, yt_id)
-    if not moved_files:
-        print(f"[WARN] No files found to back up for {yt_id}. Skipping.")
-        return
-
-    # print("CONF ARGS:", conf_args)
+    os.makedirs(redownload_dir, exist_ok=True)
     success = False
 
     for attempt in range(1, max_retries + 1):
@@ -169,6 +160,9 @@ def perform_redownload(conf_args, yt_id, folder, backup_root, redownload_dir, dr
             with YoutubeDL(ydl_opts) as ydl:
                 ydl.download([f"https://www.youtube.com/watch?v={yt_id}"])
 
+            if logger.errors:
+                print(f"[Attempt {attempt}] Error detected, retrying...")
+                continue
             if logger.warnings:
                 print(f"[Attempt {attempt}] Warning detected, retrying...")
                 continue
@@ -186,8 +180,16 @@ def perform_redownload(conf_args, yt_id, folder, backup_root, redownload_dir, dr
             continue
 
     if not success:
-        print(f"[ERROR] All {max_retries} download attempts failed for {yt_id}. Backup preserved at: {backup_dir}")
+        print(f"[ERROR] All {max_retries} download attempts failed for {yt_id}. Original files remain untouched.")
         return
+
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    backup_dir = os.path.join(backup_root, f"{yt_id}_{timestamp}")
+    print(f"[SUCCESS] Download successful. Backing up original files to {backup_dir}")
+
+    moved_files = move_files(folder, backup_dir, yt_id)
+    if not moved_files:
+        print(f"[WARN] No original files found to back up for {yt_id}. Proceeding to move new files.")
 
     downloaded_files = find_downloaded_files(redownload_dir, yt_id)
     for f in downloaded_files:
@@ -195,6 +197,8 @@ def perform_redownload(conf_args, yt_id, folder, backup_root, redownload_dir, dr
 
     for f in os.listdir(redownload_dir):
         os.remove(os.path.join(redownload_dir, f))
+
+    print(f"[INFO] Redownload and replacement for {yt_id} complete.")
 
 def get_redownload_status(strategy, file_itag, best_itag, file_rank, best_rank, file_vbr, best_vbr):
     if file_rank is None or best_rank is None:
