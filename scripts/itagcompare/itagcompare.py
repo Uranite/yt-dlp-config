@@ -26,6 +26,7 @@ class Logger:
         print(f"[Warning]: {msg}")
 
     def error(self, msg):
+        self.errors.append(msg)
         print(f"[Error]: {msg}")
 
 def extract_info_from_json(json_path):
