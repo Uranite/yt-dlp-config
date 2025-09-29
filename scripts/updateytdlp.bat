@@ -1,2 +1,2 @@
-py -m pip install -U --pre "yt-dlp[default,curl-cffi]"
+py -m pip install -U --pre "yt-dlp[default]"
 pause
