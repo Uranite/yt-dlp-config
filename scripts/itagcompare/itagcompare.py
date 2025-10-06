@@ -49,6 +49,8 @@ def extract_info_from_json(json_path):
 
     return None
 
+# to do: maybe we can also get formats from existing info.json file, because it also contains m3u8 protocols 
+# since _video.YoutubeIE._formats only contains https
 def get_master_format_rankings():
     formats = _video.YoutubeIE._formats
     formats_list = []
