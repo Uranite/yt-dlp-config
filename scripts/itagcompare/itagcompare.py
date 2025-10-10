@@ -7,7 +7,6 @@ from datetime import datetime
 
 import yt_dlp
 from yt_dlp import YoutubeDL, parse_options
-from yt_dlp.extractor.youtube import _video
 
 class Logger:
     def __init__(self):
@@ -23,43 +22,29 @@ class Logger:
 
     def warning(self, msg):
         self.warnings.append(msg)
-        print(f"[Warning]: {msg}")
+        # print(f"[Warning]: {msg}")
 
     def error(self, msg):
         self.errors.append(msg)
         print(f"[Error]: {msg}")
 
-def extract_info_from_json(json_path):
+def parse_info_json(json_path):
     try:
         with open(json_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
-
-        if data.get('_type') != 'video':
-            return None
-
-        video_id = data.get('id')
-        format_id = data.get('format_id')
-        vbr = data.get('vbr')
-
-        if video_id and format_id:
-            video_format_itag = format_id.split('+')[0]
-            return video_id, video_format_itag, vbr
+        if data.get('_type') == 'video':
+            return data
     except Exception as e:
         print(f"[ERROR] Failed to parse {json_path}: {e}")
-
     return None
 
-# to do: maybe we can also get formats from existing info.json file, because it also contains m3u8 protocols 
-# since _video.YoutubeIE._formats only contains https
-def get_master_format_rankings():
-    formats = _video.YoutubeIE._formats
-    formats_list = []
-    for itag, fmt in formats.items():
-        fmt = fmt.copy()
-        fmt['format_id'] = itag
-        if 'url' not in fmt:
-            fmt['url'] = f'https://dummy/{itag}'
-        formats_list.append(fmt)
+def get_combined_format_rankings(local_formats, live_formats):
+    # Combine formats, giving preference to live formats in case of duplicates
+    combined_formats = {fmt['format_id']: fmt for fmt in local_formats}
+    for fmt in live_formats:
+        combined_formats[fmt['format_id']] = fmt
+
+    formats_list = list(combined_formats.values())
 
     info_dict = {'formats': formats_list}
 
@@ -76,7 +61,7 @@ def get_master_format_rankings():
     itag_rank_map['616'] = 0
     return itag_rank_map
 
-def get_best_live_format(conf_args, youtube_id, max_retries=5):
+def get_live_info(conf_args, youtube_id, max_retries=5):
     url = f"https://www.youtube.com/watch?v={youtube_id}"
 
     for attempt in range(1, max_retries + 1):
@@ -90,20 +75,18 @@ def get_best_live_format(conf_args, youtube_id, max_retries=5):
         try:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(url, download=False)
-                formats = info['formats']
-                best_format = formats[-1]  # Get the best format
 
             if logger.warnings:
-                # print(f"[Attempt {attempt}] Warning detected, retrying...")
+                # print(f"[Attempt {attempt}] Warning detected while fetching info for {youtube_id}, retrying...")
                 continue
 
-            return best_format['format_id'], best_format.get('vbr')
+            return info
         except Exception as e:
-            print(f"[Attempt {attempt}] Error: {e}")
+            print(f"[Attempt {attempt}] Error fetching info for {youtube_id}: {e}")
             continue
 
-    print("Failed to get a format without warnings.")
-    return None, None
+    print(f"Failed to get live info for {youtube_id} without warnings.")
+    return None
 
 def move_files(src_folder, dest_folder, video_id):
     if not os.path.exists(dest_folder):
@@ -273,7 +256,6 @@ def main():
     conf_args = parse_yt_dlp_conf(args.config)
     log_file = os.path.join(folder, 'itagcompare.log') if args.log_auto else args.log
 
-    itag_rankings = get_master_format_rankings()
     seen_ids = set()
 
     out_file = None
@@ -282,17 +264,25 @@ def main():
         print(f"[INFO] Logging to {log_file}")
 
     try:
-        for filename in os.listdir(folder):
+        for filename in sorted(os.listdir(folder)):
             if not filename.endswith('.info.json'):
                 continue
 
             json_path = os.path.join(folder, filename)
-            json_info = extract_info_from_json(json_path)
+            json_data = parse_info_json(json_path)
             
-            if not json_info:
+            if not json_data:
                 continue
             
-            yt_id, file_itag, file_vbr = json_info
+            yt_id = json_data.get('id')
+            file_format_id = json_data.get('format_id')
+            file_vbr = json_data.get('vbr')
+            local_formats = json_data.get('formats', [])
+            
+            if not (yt_id and file_format_id):
+                continue
+
+            file_itag = file_format_id.split('+')[0]
             
             if yt_id in seen_ids:
                 continue
@@ -303,10 +293,20 @@ def main():
                     print(f"[SKIP] {filename}: Format {file_itag} not in filter list")
                 continue
 
-            best_itag, best_vbr = get_best_live_format(conf_args, yt_id)
-            if best_itag is None:
-                print(f"[ERROR] Could not determine best format for {yt_id}. Skipping.")
-                continue
+            # if args.verbose:
+                # print(f"[PROCESS] {filename} ({yt_id})")
+
+            live_info = get_live_info(conf_args, yt_id)
+
+            live_formats = live_info.get('formats', [])
+
+            video_formats = [f for f in live_formats if f.get('vcodec') != 'none']
+
+            best_format = video_formats[-1]  # Best to worst
+            best_itag = best_format['format_id']
+            best_vbr = best_format.get('vbr')
+
+            itag_rankings = get_combined_format_rankings(local_formats, live_formats)
 
             file_rank = itag_rankings.get(file_itag)
             best_rank = itag_rankings.get(best_itag)
