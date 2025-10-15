@@ -4,7 +4,7 @@ Configuration files for [yt-dlp](https://github.com/yt-dlp/yt-dlp) to archive Yo
 
 ## Prerequisites
 
-- [Python](https://www.python.org/downloads/) 3.9 or later
+- [Python](https://www.python.org/downloads/) 3.10 or later
 - [yt-dlp](https://github.com/yt-dlp/yt-dlp)
 - (Optional) [aria2c](https://aria2.github.io/) for potentially faster downloads
 
@@ -18,7 +18,7 @@ Configuration files for [yt-dlp](https://github.com/yt-dlp/yt-dlp) to archive Yo
 
 2. Install yt-dlp (nightly):
    ```bash
-   pip install -U --pre "yt-dlp[default,curl-cffi]"
+   pip install -U --pre "yt-dlp[default]"
    ```
 
 ## Quick Start
@@ -53,7 +53,7 @@ Edit the `yt-dlp.conf` file in either the `channel/` or `playlist/` directory to
 To update yt-dlp to the latest nightly version, run:
 
 ```bash
-pip install -U --pre "yt-dlp[default,curl-cffi]"
+pip install -U --pre "yt-dlp[default]"
 ```
 
 Or use the included update script:
