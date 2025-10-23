@@ -216,7 +216,7 @@ def get_redownload_status(strategy, file_itag, best_itag, file_rank, best_rank, 
     return "MATCH", False
 
 def main():
-    parser = argparse.ArgumentParser(description="Compare and redownload YouTube videos based on format and/or VBR")
+    parser = argparse.ArgumentParser(description="Compare and redownload YouTube videos based on format and/or VBR (info.json required)")
     parser.add_argument('-f', '--folder', required=True,
                         help='Directory containing downloaded videos and their .info.json files')
     parser.add_argument('-l', '--log',
@@ -300,9 +300,7 @@ def main():
 
             live_formats = live_info.get('formats', [])
 
-            video_formats = [f for f in live_formats if f.get('vcodec') != 'none']
-
-            best_format = video_formats[-1]  # Best to worst
+            best_format = live_formats[-1]  # Best to worst
             best_itag = best_format['format_id']
             best_vbr = best_format.get('vbr')
 
