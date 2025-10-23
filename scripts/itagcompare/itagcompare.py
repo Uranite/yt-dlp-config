@@ -119,7 +119,6 @@ def parse_yt_dlp_conf(config_path):
 def perform_redownload(conf_args, yt_id, folder, backup_root, redownload_dir, dry_run, max_retries=5):
     print(f"\n[INFO] Attempting redownload for {yt_id}...")
     if dry_run:
-        print(f"[DRY RUN] Would attempt redownload for {yt_id}.")
         return
 
     os.makedirs(redownload_dir, exist_ok=True)
