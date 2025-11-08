@@ -20,6 +20,8 @@ Configuration files for [yt-dlp](https://github.com/yt-dlp/yt-dlp) to archive Yo
    ```bash
    pip install -U --pre "yt-dlp[default,curl-cffi]"
    ```
+   Pls also install the recommended dependencies
+   https://github.com/yt-dlp/yt-dlp?tab=readme-ov-file#strongly-recommended
 
 ## Quick Start
 
