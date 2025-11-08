@@ -76,9 +76,9 @@ def get_live_info(conf_args, youtube_id, max_retries=5):
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(url, download=False)
 
-            # if logger.warnings:
+            if logger.warnings:
                 # print(f"[Attempt {attempt}] Warning detected while fetching info for {youtube_id}, retrying...")
-                # continue
+                continue
 
             return info
         except Exception as e:
@@ -148,9 +148,9 @@ def perform_redownload(conf_args, yt_id, folder, backup_root, redownload_dir, dr
             if logger.errors:
                 print(f"[Attempt {attempt}] Error detected, retrying...")
                 continue
-            # if logger.warnings:
-                # print(f"[Attempt {attempt}] Warning detected, retrying...")
-                # continue
+            if logger.warnings:
+                print(f"[Attempt {attempt}] Warning detected, retrying...")
+                continue
 
             downloaded_files = find_downloaded_files(redownload_dir, yt_id)
             if not downloaded_files:
