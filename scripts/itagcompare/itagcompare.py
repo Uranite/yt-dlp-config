@@ -27,6 +27,10 @@ class Logger:
     def error(self, msg):
         self.errors.append(msg)
         print(f"[Error]: {msg}")
+    
+    def clear(self):
+        self.warnings = []
+        self.errors = []
 
 def parse_info_json(json_path):
     try:
@@ -38,7 +42,7 @@ def parse_info_json(json_path):
         print(f"[ERROR] Failed to parse {json_path}: {e}")
     return None
 
-def get_combined_format_rankings(local_formats, live_formats):
+def get_combined_format_rankings(local_formats, live_formats, ydl_sorter):
     # Combine formats, giving preference to live formats in case of duplicates
     combined_formats = {fmt['format_id']: fmt for fmt in local_formats}
     for fmt in live_formats:
@@ -48,8 +52,7 @@ def get_combined_format_rankings(local_formats, live_formats):
 
     info_dict = {'formats': formats_list}
 
-    ydl = YoutubeDL(params={})
-    ydl.sort_formats(info_dict)
+    ydl_sorter.sort_formats(info_dict)
 
     itag_rank_map = {}
     current_rank = 1
@@ -61,20 +64,14 @@ def get_combined_format_rankings(local_formats, live_formats):
     itag_rank_map['616'] = 0
     return itag_rank_map
 
-def get_live_info(conf_args, youtube_id, max_retries=5):
+def get_live_info(ydl_fetcher, logger, youtube_id, max_retries=5):
     url = f"https://www.youtube.com/watch?v={youtube_id}"
 
     for attempt in range(1, max_retries + 1):
-        logger = Logger()
-        parsed = parse_options(conf_args)
-        ydl_opts = parsed.ydl_opts
-        # print("YDL OPTS:", ydl_opts)
-
-        ydl_opts['quiet'] = True
-        ydl_opts['logger'] = logger
+        logger.clear()
+        
         try:
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                info = ydl.extract_info(url, download=False)
+            info = ydl_fetcher.extract_info(url, download=False)
 
             if logger.warnings:
                 # print(f"[Attempt {attempt}] Warning detected while fetching info for {youtube_id}, retrying...")
@@ -252,18 +249,28 @@ def main():
     backup_root = args.backup_dir or os.path.join(folder, 'temp_backup')
     redownload_dir = os.path.join(folder, 'temp_download')
 
-    conf_args = parse_yt_dlp_conf(args.config)
     log_file = os.path.join(folder, 'itagcompare.log') if args.log_auto else args.log
 
+    conf_args = parse_yt_dlp_conf(args.config)
+    parsed_opts = parse_options(conf_args).ydl_opts
+    fetcher_logger = Logger()
+    parsed_opts['quiet'] = True
+    parsed_opts['logger'] = fetcher_logger
+    
+    ydl_fetcher = YoutubeDL(parsed_opts)
+    
+    ydl_sorter = YoutubeDL(params={})
+    
     seen_ids = set()
-
     out_file = None
+
     if log_file:
         out_file = open(log_file, 'w', encoding='utf-8')
         print(f"[INFO] Logging to {log_file}")
 
     try:
-        for filename in sorted(os.listdir(folder)):
+        file_list = sorted(os.listdir(folder))
+        for filename in file_list:
             if not filename.endswith('.info.json'):
                 continue
 
@@ -292,10 +299,10 @@ def main():
                     print(f"[SKIP] {filename}: Format {file_itag} not in filter list")
                 continue
 
-            # if args.verbose:
-                # print(f"[PROCESS] {filename} ({yt_id})")
-
-            live_info = get_live_info(conf_args, yt_id)
+            live_info = get_live_info(ydl_fetcher, fetcher_logger, yt_id)
+            
+            if not live_info:
+                continue
 
             live_formats = live_info.get('formats', [])
 
@@ -303,7 +310,7 @@ def main():
             best_itag = best_format['format_id']
             best_vbr = best_format.get('vbr')
 
-            itag_rankings = get_combined_format_rankings(local_formats, live_formats)
+            itag_rankings = get_combined_format_rankings(local_formats, live_formats, ydl_sorter)
 
             file_rank = itag_rankings.get(file_itag)
             best_rank = itag_rankings.get(best_itag)
@@ -342,6 +349,9 @@ def main():
                 perform_redownload(conf_args, yt_id, folder, backup_root, redownload_dir, args.dry_run)
 
     finally:
+        ydl_fetcher.close()
+        ydl_sorter.close()
+
         if not args.dry_run:
             if os.path.exists(redownload_dir) and not os.listdir(redownload_dir):
                 os.rmdir(redownload_dir)
