@@ -26,7 +26,7 @@ class Logger:
     def error(self, msg):
         self.errors.append(msg)
         print(f"[Error]: {msg}")
-    
+
     def clear(self):
         self.warnings = []
         self.errors = []
@@ -68,7 +68,7 @@ def get_live_info(ydl_fetcher, logger, youtube_id, max_retries=5):
 
     for attempt in range(1, max_retries + 1):
         logger.clear()
-        
+
         try:
             info = ydl_fetcher.extract_info(url, download=False)
 
@@ -207,7 +207,7 @@ def get_redownload_status(strategy, file_itag, best_itag, file_rank, best_rank, 
         if best_vbr != file_vbr:
             return f"VBR_MISMATCH ({file_vbr}kbps vs {best_vbr}kbps)", True
         return "MATCH", False
-    
+
     return "MATCH", False
 
 def main():
@@ -255,7 +255,7 @@ def main():
     fetcher_logger = Logger()
     parsed_opts['quiet'] = True
     parsed_opts['logger'] = fetcher_logger
-    
+
     seen_ids = set()
     out_file = None
 
@@ -272,20 +272,20 @@ def main():
 
                 json_path = os.path.join(folder, filename)
                 json_data = parse_info_json(json_path)
-                
+
                 if not json_data:
                     continue
-                
+
                 yt_id = json_data.get('id')
                 file_format_id = json_data.get('format_id')
                 file_vbr = json_data.get('vbr')
                 local_formats = json_data.get('formats', [])
-                
+
                 if not (yt_id and file_format_id):
                     continue
 
                 file_itag = file_format_id.split('+')[0]
-                
+
                 if yt_id in seen_ids:
                     continue
                 seen_ids.add(yt_id)
@@ -296,7 +296,7 @@ def main():
                     continue
 
                 live_info = get_live_info(ydl_fetcher, fetcher_logger, yt_id)
-                
+
                 if not live_info:
                     continue
 
