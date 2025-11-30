@@ -5,7 +5,6 @@ import shlex
 import shutil
 from datetime import datetime
 
-import yt_dlp
 from yt_dlp import YoutubeDL, parse_options
 
 class Logger:
@@ -257,10 +256,6 @@ def main():
     parsed_opts['quiet'] = True
     parsed_opts['logger'] = fetcher_logger
     
-    ydl_fetcher = YoutubeDL(parsed_opts)
-    
-    ydl_sorter = YoutubeDL(params={})
-    
     seen_ids = set()
     out_file = None
 
@@ -269,89 +264,87 @@ def main():
         print(f"[INFO] Logging to {log_file}")
 
     try:
-        file_list = sorted(os.listdir(folder))
-        for filename in file_list:
-            if not filename.endswith('.info.json'):
-                continue
+        with YoutubeDL(parsed_opts) as ydl_fetcher, YoutubeDL(params={}) as ydl_sorter:
+            file_list = sorted(os.listdir(folder))
+            for filename in file_list:
+                if not filename.endswith('.info.json'):
+                    continue
 
-            json_path = os.path.join(folder, filename)
-            json_data = parse_info_json(json_path)
-            
-            if not json_data:
-                continue
-            
-            yt_id = json_data.get('id')
-            file_format_id = json_data.get('format_id')
-            file_vbr = json_data.get('vbr')
-            local_formats = json_data.get('formats', [])
-            
-            if not (yt_id and file_format_id):
-                continue
+                json_path = os.path.join(folder, filename)
+                json_data = parse_info_json(json_path)
+                
+                if not json_data:
+                    continue
+                
+                yt_id = json_data.get('id')
+                file_format_id = json_data.get('format_id')
+                file_vbr = json_data.get('vbr')
+                local_formats = json_data.get('formats', [])
+                
+                if not (yt_id and file_format_id):
+                    continue
 
-            file_itag = file_format_id.split('+')[0]
-            
-            if yt_id in seen_ids:
-                continue
-            seen_ids.add(yt_id)
+                file_itag = file_format_id.split('+')[0]
+                
+                if yt_id in seen_ids:
+                    continue
+                seen_ids.add(yt_id)
 
-            if args.process_format and file_itag not in args.process_format:
-                if args.verbose:
-                    print(f"[SKIP] {filename}: Format {file_itag} not in filter list")
-                continue
+                if args.process_format and file_itag not in args.process_format:
+                    if args.verbose:
+                        print(f"[SKIP] {filename}: Format {file_itag} not in filter list")
+                    continue
 
-            live_info = get_live_info(ydl_fetcher, fetcher_logger, yt_id)
-            
-            if not live_info:
-                continue
+                live_info = get_live_info(ydl_fetcher, fetcher_logger, yt_id)
+                
+                if not live_info:
+                    continue
 
-            live_formats = live_info.get('formats', [])
+                live_formats = live_info.get('formats', [])
 
-            best_format = live_formats[-1]  # Best to worst
-            best_itag = best_format['format_id']
-            best_vbr = best_format.get('vbr')
+                best_format = live_formats[-1]  # Best to worst
+                best_itag = best_format['format_id']
+                best_vbr = best_format.get('vbr')
 
-            itag_rankings = get_combined_format_rankings(local_formats, live_formats, ydl_sorter)
+                itag_rankings = get_combined_format_rankings(local_formats, live_formats, ydl_sorter)
 
-            file_rank = itag_rankings.get(file_itag)
-            best_rank = itag_rankings.get(best_itag)
+                file_rank = itag_rankings.get(file_itag)
+                best_rank = itag_rankings.get(best_itag)
 
-            status, redownload = get_redownload_status(
-                args.strategy, file_itag, best_itag, file_rank, best_rank, file_vbr, best_vbr
-            )
-
-            # ANSI color codes
-            GREEN = '\033[92m'
-            BLUE = '\033[94m'
-            YELLOW = '\033[93m'
-            END = '\033[0m'
-
-            if redownload or args.verbose:
-                file_itag_colored = f"{GREEN}{file_itag}{END}"
-                file_rank_colored = f"{BLUE}{file_rank}{END}" if file_rank is not None else "N/A"
-                best_itag_colored = f"{GREEN}{best_itag}{END}"
-                best_rank_colored = f"{BLUE}{best_rank}{END}" if best_rank is not None else "N/A"
-                status_colored = f"{YELLOW}{status}{END}" if redownload else status
-
-                report_line_colored = (
-                    f"{filename}: File Itag: {file_itag_colored} (Rank {file_rank_colored}), "
-                    f"Best Itag: {best_itag_colored} (Rank {best_rank_colored}) - {status_colored}"
+                status, redownload = get_redownload_status(
+                    args.strategy, file_itag, best_itag, file_rank, best_rank, file_vbr, best_vbr
                 )
-                print(report_line_colored)
 
-                if out_file is not None:
-                    report_line = (
-                        f"{filename}: File Itag: {file_itag} (Rank {file_rank}), "
-                        f"Best Itag: {best_itag} (Rank {best_rank}) - {status}"
+                # ANSI color codes
+                GREEN = '\033[92m'
+                BLUE = '\033[94m'
+                YELLOW = '\033[93m'
+                END = '\033[0m'
+
+                if redownload or args.verbose:
+                    file_itag_colored = f"{GREEN}{file_itag}{END}"
+                    file_rank_colored = f"{BLUE}{file_rank}{END}" if file_rank is not None else "N/A"
+                    best_itag_colored = f"{GREEN}{best_itag}{END}"
+                    best_rank_colored = f"{BLUE}{best_rank}{END}" if best_rank is not None else "N/A"
+                    status_colored = f"{YELLOW}{status}{END}" if redownload else status
+
+                    report_line_colored = (
+                        f"{filename}: File Itag: {file_itag_colored} (Rank {file_rank_colored}), "
+                        f"Best Itag: {best_itag_colored} (Rank {best_rank_colored}) - {status_colored}"
                     )
-                    out_file.write(report_line + '\n')
+                    print(report_line_colored)
 
-            if redownload:
-                perform_redownload(conf_args, yt_id, folder, backup_root, redownload_dir, args.dry_run)
+                    if out_file is not None:
+                        report_line = (
+                            f"{filename}: File Itag: {file_itag} (Rank {file_rank}), "
+                            f"Best Itag: {best_itag} (Rank {best_rank}) - {status}"
+                        )
+                        out_file.write(report_line + '\n')
+
+                if redownload:
+                    perform_redownload(conf_args, yt_id, folder, backup_root, redownload_dir, args.dry_run)
 
     finally:
-        ydl_fetcher.close()
-        ydl_sorter.close()
-
         if not args.dry_run:
             if os.path.exists(redownload_dir) and not os.listdir(redownload_dir):
                 os.rmdir(redownload_dir)
