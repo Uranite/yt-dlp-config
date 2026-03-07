@@ -265,12 +265,21 @@ def main():
 
     try:
         with YoutubeDL(parsed_opts) as ydl_fetcher, YoutubeDL(params={}) as ydl_sorter:
-            file_list = sorted(os.listdir(folder))
-            for filename in file_list:
-                if not filename.endswith('.info.json'):
-                    continue
+            file_list = []
+            for root, dirs, files in os.walk(folder):
+                for d in list(dirs):
+                    if os.path.join(root, d) in (backup_root, redownload_dir):
+                        dirs.remove(d)
+                for file in files:
+                    if file.endswith('.info.json'):
+                        file_list.append(os.path.join(root, file))
+            file_list.sort()
 
-                json_path = os.path.join(folder, filename)
+            for json_path in file_list:
+                filename = os.path.basename(json_path)
+                current_folder = os.path.dirname(json_path)
+                rel_path = os.path.relpath(json_path, folder)
+
                 json_data = parse_info_json(json_path)
 
                 if not json_data:
@@ -292,7 +301,7 @@ def main():
 
                 if args.process_format and file_itag not in args.process_format:
                     if args.verbose:
-                        print(f"[SKIP] {filename}: Format {file_itag} not in filter list")
+                        print(f"[SKIP] {rel_path}: Format {file_itag} not in filter list")
                     continue
 
                 live_info = get_live_info(ydl_fetcher, fetcher_logger, yt_id)
@@ -329,20 +338,20 @@ def main():
                     status_colored = f"{YELLOW}{status}{END}" if redownload else status
 
                     report_line_colored = (
-                        f"{filename}: File Itag: {file_itag_colored} (Rank {file_rank_colored}), "
+                        f"{rel_path}: File Itag: {file_itag_colored} (Rank {file_rank_colored}), "
                         f"Best Itag: {best_itag_colored} (Rank {best_rank_colored}) - {status_colored}"
                     )
                     print(report_line_colored)
 
                     if out_file is not None:
                         report_line = (
-                            f"{filename}: File Itag: {file_itag} (Rank {file_rank}), "
+                            f"{rel_path}: File Itag: {file_itag} (Rank {file_rank}), "
                             f"Best Itag: {best_itag} (Rank {best_rank}) - {status}"
                         )
                         out_file.write(report_line + '\n')
 
                 if redownload:
-                    perform_redownload(conf_args, yt_id, folder, backup_root, redownload_dir, args.dry_run)
+                    perform_redownload(conf_args, yt_id, current_folder, backup_root, redownload_dir, args.dry_run)
 
     finally:
         if not args.dry_run:
