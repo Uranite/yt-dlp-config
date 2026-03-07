@@ -220,7 +220,8 @@ def main():
                         help='Automatically determine log file location in the input folder')
     parser.add_argument('--dry-run', action='store_true',
                         help='Run without making any changes to files')
-    parser.add_argument('--config', default='yt-dlp.conf',
+    default_config = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'yt-dlp.conf')
+    parser.add_argument('--config', default=default_config,
                         help='Custom yt-dlp configuration file path')
     parser.add_argument('--backup-dir',
                         help='Custom directory for storing backups of original files')
