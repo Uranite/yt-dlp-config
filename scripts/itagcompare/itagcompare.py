@@ -3,6 +3,7 @@ import json
 import os
 import shlex
 import shutil
+import time
 from datetime import datetime
 
 from yt_dlp import YoutubeDL, parse_options
@@ -63,7 +64,7 @@ def get_combined_format_rankings(local_formats, live_formats, ydl_sorter):
     itag_rank_map['616'] = 0
     return itag_rank_map
 
-def get_live_info(ydl_fetcher, logger, youtube_id, max_retries=5):
+def get_live_info(ydl_fetcher, logger, youtube_id, sleep_interval=15, max_retries=5):
     url = f"https://www.youtube.com/watch?v={youtube_id}"
 
     for attempt in range(1, max_retries + 1):
@@ -74,11 +75,15 @@ def get_live_info(ydl_fetcher, logger, youtube_id, max_retries=5):
 
             if logger.warnings:
                 # print(f"[Attempt {attempt}] Warning detected while fetching info for {youtube_id}, retrying...")
+                if attempt < max_retries and sleep_interval > 0:
+                    time.sleep(sleep_interval)
                 continue
 
             return info
         except Exception as e:
             print(f"[Attempt {attempt}] Error fetching info for {youtube_id}: {e}")
+            if attempt < max_retries and sleep_interval > 0:
+                time.sleep(sleep_interval)
             continue
 
     print(f"Failed to get live info for {youtube_id} without warnings.")
@@ -112,7 +117,7 @@ def parse_yt_dlp_conf(config_path):
             args_list.extend(shlex.split(line))
     return args_list
 
-def perform_redownload(conf_args, yt_id, folder, backup_root, redownload_dir, dry_run, max_retries=5):
+def perform_redownload(conf_args, yt_id, folder, backup_root, redownload_dir, dry_run, sleep_interval=15, max_retries=5):
     print(f"\n[INFO] Attempting redownload for {yt_id}...")
     if dry_run:
         return
@@ -143,14 +148,20 @@ def perform_redownload(conf_args, yt_id, folder, backup_root, redownload_dir, dr
 
             if logger.errors:
                 print(f"[Attempt {attempt}] Error detected, retrying...")
+                if attempt < max_retries and sleep_interval > 0:
+                    time.sleep(sleep_interval)
                 continue
             if logger.warnings:
                 print(f"[Attempt {attempt}] Warning detected, retrying...")
+                if attempt < max_retries and sleep_interval > 0:
+                    time.sleep(sleep_interval)
                 continue
 
             downloaded_files = find_downloaded_files(redownload_dir, yt_id)
             if not downloaded_files:
                 print(f"[Attempt {attempt}] No files downloaded, retrying...")
+                if attempt < max_retries and sleep_interval > 0:
+                    time.sleep(sleep_interval)
                 continue
 
             success = True
@@ -158,6 +169,8 @@ def perform_redownload(conf_args, yt_id, folder, backup_root, redownload_dir, dr
 
         except Exception as e:
             print(f"[Attempt {attempt}] yt-dlp error: {e}")
+            if attempt < max_retries and sleep_interval > 0:
+                time.sleep(sleep_interval)
             continue
 
     if not success:
@@ -241,6 +254,8 @@ def main():
                         ''')
     parser.add_argument('--process-format', nargs='+',
                         help='Only process videos with these format IDs (e.g., 399 400 401)')
+    parser.add_argument('--sleep-interval', type=int, default=15,
+                        help='Seconds to wait between API requests to prevent rate limiting (default: 15)')
 
     args = parser.parse_args()
 
@@ -265,6 +280,7 @@ def main():
         print(f"[INFO] Logging to {log_file}")
 
     try:
+        first_request = True
         with YoutubeDL(parsed_opts) as ydl_fetcher, YoutubeDL(params={}) as ydl_sorter:
             file_list = []
             for root, dirs, files in os.walk(folder):
@@ -305,7 +321,12 @@ def main():
                         print(f"[SKIP] {rel_path}: Format {file_itag} not in filter list")
                     continue
 
-                live_info = get_live_info(ydl_fetcher, fetcher_logger, yt_id)
+                if not first_request and args.sleep_interval > 0:
+                    print(f"[INFO] Waiting {args.sleep_interval} seconds before next request...")
+                    time.sleep(args.sleep_interval)
+                first_request = False
+
+                live_info = get_live_info(ydl_fetcher, fetcher_logger, yt_id, args.sleep_interval)
 
                 if not live_info:
                     continue
@@ -352,7 +373,10 @@ def main():
                         out_file.write(report_line + '\n')
 
                 if redownload:
-                    perform_redownload(conf_args, yt_id, current_folder, backup_root, redownload_dir, args.dry_run)
+                    if args.sleep_interval > 0:
+                        print(f"[INFO] Waiting {args.sleep_interval} seconds before redownloading...")
+                        time.sleep(args.sleep_interval)
+                    perform_redownload(conf_args, yt_id, current_folder, backup_root, redownload_dir, args.dry_run, args.sleep_interval)
 
     finally:
         if not args.dry_run:
