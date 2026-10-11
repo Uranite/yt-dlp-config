@@ -126,7 +126,7 @@ def perform_redownload(conf_args, yt_id, folder, backup_root, redownload_dir, dr
     success = False
 
     for attempt in range(1, max_retries + 1):
-        # Even if there is an error, yt-dlp can still download some/all the files, just different format
+        # Even if there is an error, yt-dlp might still proceed to download a different format
         for f in os.listdir(redownload_dir):
             try:
                 os.remove(os.path.join(redownload_dir, f))
@@ -346,7 +346,6 @@ def main():
                     args.strategy, file_itag, best_itag, file_rank, best_rank, file_vbr, best_vbr
                 )
 
-                # ANSI color codes
                 GREEN = '\033[92m'
                 BLUE = '\033[94m'
                 YELLOW = '\033[93m'
